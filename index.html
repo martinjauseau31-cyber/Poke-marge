@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/dexie@latest/dist/dexie.min.js"></script>
-<script src="https://unpkg.com/dexie-cloud-addon@latest/dist/dexie-cloud-addon.min.js"></script>
-<style>
+<script src="https://cdn.jsdelivr.net/npm/dexie@4.0.10/dist/dexie.min.js"></script>
+<script src="https://unpkg.com/dexie-cloud-addon@latest/dist/dexie-cloud-addon.js"></script>
+
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
 --bg:#05050d;--bg2:#0a0a18;--card:rgba(20,22,40,.55);--card-solid:#14162a;
@@ -695,7 +695,7 @@ function resetAll() {
 }/* ============================================================
    DEXIE CLOUD SYNC
    ============================================================ */
-const db = new Dexie('PokemargesDB');
+const db = new Dexie('PokemargesDB', { addons: [dexieCloud] });
 db.version(1).stores({
   appState: 'id'
 });
