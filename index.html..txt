@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéMarges - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --text: #333;
+            --border: #ddd;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #1a252f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .ok { color: var(--success); font-weight: bold; }
+        .no { color: var(--accent); font-weight: bold; }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .summary-item .label {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PokéMarges - Dashboard</h1>
+
+        <div class="dashboard">
+            <!-- Formulaire d'ajout -->
+            <div class="card">
+                <h2>Ajouter une carte</h2>
+                <div class="form-group">
+                    <label>Nom de la carte</label>
+                    <input type="text" id="nom" placeholder="Ex: Dracaufeu ex Alt Art">
+                </div>
+                <div class="form-group">
+                    <label>Prix d'achat brut (€)</label>
+                    <input type="number" id="prixAchat" step="0.01" value="80">
+                </div>
+                <div class="form-group">
+                    <label>Frais de port achat (€)</label>
+                    <input type="number" id="fraisPort" step="0.01" value="6.5">
+                </div>
+                <div class="form-group">
+                    <label>Frais de gradation (€)</label>
+                    <input type="number" id="fraisGradation" step="0.01" value="18">
+                </div>
+                <div class="form-group">
+                    <label>Prix revente estimé CCC 10 (€)</label>
+                    <input type="number" id="prixCCC10" step="0.01" value="210">
+                </div>
+                <div class="form-group">
+                    <label>Prix revente estimé CCC 9 (€)</label>
+                    <input type="number" id="prixCCC9" step="0.01" value="120">
+                </div>
+                <div class="form-group">
+                    <label>Probabilité estimée d'obtenir 10 (%)</label>
+                    <input type="number" id="prob10" step="1" value="30" min="0" max="100">
+                </div>
+                <button onclick="ajouterCarte()">Ajouter la carte</button>
+            </div>
+
+            <!-- Résumé et Graphique -->
+            <div class="card">
+                <h2>Résumé du portefeuille</h2>
+                <div class="summary">
+                    <div class="summary-item">
+                        <div class="value" id="totalInvesti">0 €</div>
+                        <div class="label">Investissement total</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="totalMarge">0 €</div>
+                        <div class="label">Marge nette totale (EV)</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="roiGlobal">0 %</div>
+                        <div class="label">ROI global (EV)</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="nombreCartes">0</div>
+                        <div class="label">Cartes analysées</div>
+                    </div>
+                </div>
+                <div class="chart-container" style="margin-top: 20px;">
+                    <canvas id="margeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des résultats -->
+        <div class="card">
+            <h2>Détail des cartes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Coût revient</th>
+                        <th>Prix 10</th>
+                        <th>Prix 9</th>
+                        <th>Prob. 10</th>
+                        <th>EV</th>
+                        <th>Seuil P10</th>
+                        <th>Décision</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Les lignes seront ajoutées ici -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let cartes = [];
+        let chart = null;
+
+        // Constantes de frais (à ajuster)
+        const COMMISSION_PLATEFORME = 0.123; // 12.3% de frais (commission + port)
+        const TAUX_RETOUR = 1 - COMMISSION_PLATEFORME;
+
+        function calculerCoûtRevient(carte) {
+            return carte.prixAchat + carte.fraisPort + carte.fraisGradation;
+        }
+
+        function calculerEV(carte) {
+            const coutRevient = calculerCoûtRevient(carte);
+            const net10 = (carte.prixCCC10 * TAUX_RETOUR) - coutRevient;
+            const net9 = (carte.prixCCC9 * TAUX_RETOUR) - coutRevient;
+            const p10 = carte.prob10 / 100;
+            const p9 = 1 - p10;
+            return (p10 * net10) + (p9 * net9);
+        }
+
+        function calculerSeuilP10(carte) {
+            const coutRevient = calculerCoûtRevient(carte);
+            const net10 = (carte.prixCCC10 * TAUX_RETOUR) - coutRevient;
+            const net9 = (carte.prixCCC9 * TAUX_RETOUR) - coutRevient;
+            if (net9 >= 0) return 0; // Déjà rentable en 9
+            if (net10 <= 0) return 100; // Même en 10, pas rentable
+            return Math.round((-net9 / (net10 - net9)) * 100);
+        }
+
+        function ajouterCarte() {
+            const nom = document.getElementById('nom').value || "Carte inconnue";
+            const prixAchat = parseFloat(document.getElementById('prixAchat').value) || 0;
+            const fraisPort = parseFloat(document.getElementById('fraisPort').value) || 0;
+            const fraisGradation = parseFloat(document.getElementById('fraisGradation').value) || 0;
+            const prixCCC10 = parseFloat(document.getElementById('prixCCC10').value) || 0;
+            const prixCCC9 = parseFloat(document.getElementById('prixCCC9').value) || 0;
+            const prob10 = parseFloat(document.getElementById('prob10').value) || 0;
+
+            const nouvelleCarte = {
+                id: Date.now(),
+                nom,
+                prixAchat,
+                fraisPort,
+                fraisGradation,
+                prixCCC10,
+                prixCCC9,
+                prob10
+            };
+
+            cartes.push(nouvelleCarte);
+            afficherCartes();
+            mettreAJourResume();
+            mettreAJourGraphique();
+
+            // Réinitialiser le formulaire (optionnel)
+            document.getElementById('nom').value = '';
+        }
+
+        function afficherCartes() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            cartes.forEach(carte => {
+                const coutRevient = calculerCoûtRevient(carte);
+                const net10 = (carte.prixCCC10 * TAUX_RETOUR) - coutRevient;
+                const net9 = (carte.prixCCC9 * TAUX_RETOUR) - coutRevient;
+                const ev = calculerEV(carte);
+                const seuil = calculerSeuilP10(carte);
+                const decision = ev > 0 ? '<span class="ok">OK</span>' : '<span class="no">NON</span>';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${carte.nom}</td>
+                    <td>${coutRevient.toFixed(2)} €</td>
+                    <td>${net10.toFixed(2)} €</td>
+                    <td>${net9.toFixed(2)} €</td>
+                    <td>${carte.prob10}%</td>
+                    <td>${ev.toFixed(2)} €</td>
+                    <td>${seuil}%</td>
+                    <td>${decision}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function mettreAJourResume() {
+            let totalInvesti = 0;
+            let totalEV = 0;
+
+            cartes.forEach(carte => {
+                totalInvesti += calculerCoûtRevient(carte);
+                totalEV += calculerEV(carte);
+            });
+
+            const roiGlobal = totalInvesti > 0 ? (totalEV / totalInvesti) * 100 : 0;
+
+            document.getElementById('totalInvesti').textContent = totalInvesti.toFixed(2) + ' €';
+            document.getElementById('totalMarge').textContent = totalEV.toFixed(2) + ' €';
+            document.getElementById('roiGlobal').textContent = roiGlobal.toFixed(1) + ' %';
+            document.getElementById('nombreCartes').textContent = cartes.length;
+        }
+
+        function mettreAJourGraphique() {
+            const ctx = document.getElementById('margeChart').getContext('2d');
+            const labels = cartes.map(c => c.nom);
+            const data = cartes.map(c => calculerEV(c));
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Marge nette attendue (EV) en €',
+                        data: data,
+                        backgroundColor: data.map(v => v >= 0 ? 'rgba(39, 174, 96, 0.6)' : 'rgba(231, 76, 60, 0.6)'),
+                        borderColor: data.map(v => v >= 0 ? 'rgba(39, 174, 96, 1)' : 'rgba(231, 76, 60, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Marge nette (€)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Initialiser avec les données de ton CSV
+        window.onload = function() {
+            // Exemple : ajouter tes 3 cartes au chargement
+            const cartesInitiales = [
+                { nom: "Dracaufeu ex Alt Art", prixAchat: 80, fraisPort: 6.5, fraisGradation: 18, prixCCC10: 210, prixCCC9: 120, prob10: 30 },
+                { nom: "Pikachu Special Illustration", prixAchat: 45, fraisPort: 5, fraisGradation: 18, prixCCC10: 140, prixCCC9: 75, prob10: 25 },
+                { nom: "Ectoplasma ex", prixAchat: 30, fraisPort: 4, fraisGradation: 18, prixCCC10: 95, prixCCC9: 50, prob10: 20 }
+            ];
+            cartes = cartesInitiales.map((c, i) => ({...c, id: i}));
+            afficherCartes();
+            mettreAJourResume();
+            mettreAJourGraphique();
+        };
+    </script>
+</body>
+</html>
