@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/dexie@latest/dist/dexie.min.js"></script>
+<script src="https://unpkg.com/dexie-cloud-addon@latest/dist/dexie-cloud-addon.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -128,7 +130,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="logo-icon">⚡</div>
     <span>PokéMarges <span class="accent">Pro</span></span>
   </div>
-  <div class="h-actions">
+  <div class="h-actions">    <button class="btn" id="auth-btn">🔐 Se connecter</button>
     <button class="btn" onclick="exporter()">📥 Exporter</button>
     <button class="btn btn-danger" onclick="resetAll()">🗑️ Reset</button>
   </div>
@@ -301,6 +303,7 @@ let state = {
 function save() {
   try { localStorage.setItem('pokemarges_v2', JSON.stringify(state)); }
   catch(e) { console.warn('Save error', e); }
+  cloudSave();
 }
 function load() {
   const raw = localStorage.getItem('pokemarges_v2');
@@ -689,7 +692,66 @@ function resetAll() {
   state = { cartes: [], ventes: [], collection: [], objectifs: { ca: 5000, marge: 2000, cartes: 150 } };
   save();
   location.reload();
+}/* ============================================================
+   DEXIE CLOUD SYNC
+   ============================================================ */
+const db = new Dexie('PokemargesDB');
+db.version(1).stores({
+  appState: 'id'
+});
+
+db.cloud.configure({
+  databaseUrl: 'https://zkb6tnho2.dexie.cloud',
+  requireAuth: true
+});
+
+async function cloudSave() {
+  try {
+    await db.appState.put({ id: 'main', data: state, updatedAt: Date.now() });
+  } catch (e) { console.warn('Cloud save error:', e); }
 }
+
+async function cloudLoad() {
+  try {
+    const row = await db.appState.get('main');
+    if (row && row.data) {
+      state.cartes = row.data.cartes || [];
+      state.ventes = row.data.ventes || [];
+      state.collection = row.data.collection || [];
+      state.objectifs = row.data.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
+      return true;
+    }
+  } catch (e) { console.warn('Cloud load error:', e); }
+  return false;
+}
+
+function updateAuthButton() {
+  const btn = document.getElementById('auth-btn');
+  if (!btn) return;
+  const user = db.cloud.currentUser.value;
+  if (user && user.isLoggedIn) {
+    btn.innerHTML = '👤 ' + (user.email || user.userId || 'Connecté');
+    btn.onclick = () => {
+      if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) {
+        db.cloud.logout();
+      }
+    };
+  } else {
+    btn.innerHTML = '🔐 Se connecter';
+    btn.onclick = () => db.cloud.login();
+  }
+}
+
+db.cloud.currentUser.subscribe(async (user) => {
+  updateAuthButton();
+  if (user && user.isLoggedIn) {
+    const ok = await cloudLoad();
+    if (ok) renderAll();
+  }
+});
+
+
+
 
 /* ============================================================
    FIN PARTIE 2/3
@@ -1112,21 +1174,18 @@ function renderChartMensuelSafe() {
 }
 
 /* ---------- INITIALISATION ---------- */
-window.addEventListener('DOMContentLoaded', () => {
-  // Date du jour par défaut pour le champ vente
+window.addEventListener('DOMContentLoaded', async () => {
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
-
-  // Charger les données sauvegardées
   load();
-
-  // Activer les onglets
   initTabs();
-
-  // Premier rendu
   renderAll();
-
-  console.log('%c⚡ PokéMarges Pro chargé', 'color:#ff2d55;font-weight:bold;font-size:14px');
+  try {
+    const ok = await cloudLoad();
+    if (ok) renderAll();
+  } catch (e) { console.warn('Init cloud load failed', e); }
+  updateAuthButton();
+  console.log('%c⚡ PokéMarges Pro + Dexie Cloud chargé', 'color:#ff2d55;font-weight:bold;font-size:14px');
 });
 </script>
 </body>
