@@ -5,13 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PokéMarges Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dexie@4.0.10/dist/dexie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dexie-cloud-addon@4.0.7/dist/dexie-cloud-addon.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/dexie@4.0.10/dist/dexie.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dexie-cloud-addon@4.0.7/dist/dexie-cloud-addon.js"></script>
 <style>
-
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
 --bg:#05050d;--bg2:#0a0a18;--card:rgba(20,22,40,.55);--card-solid:#14162a;
@@ -28,8 +27,6 @@ radial-gradient(circle at 85% 10%,rgba(0,212,255,.06),transparent 45%),
 radial-gradient(circle at 50% 100%,rgba(157,78,221,.08),transparent 50%);
 background-attachment:fixed;overflow-x:hidden}
 .app{max-width:1440px;margin:0 auto;padding:24px 28px 60px}
-
-/* HEADER */
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 28px;flex-wrap:wrap;gap:16px}
 .logo{display:flex;align-items:center;gap:14px;font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
 .logo-icon{width:44px;height:44px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(255,45,85,.5),inset 0 0 20px rgba(255,255,255,.1)}
@@ -43,8 +40,6 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .btn-danger{border-color:rgba(255,71,87,.35);color:#ff8a92}
 .btn-danger:hover{background:rgba(255,71,87,.15);border-color:var(--red)}
 .btn-sm{padding:6px 10px;font-size:12px;border-radius:8px}
-
-/* TABS */
 .tabs{display:flex;gap:4px;margin-bottom:24px;background:rgba(10,10,25,.7);padding:6px;border-radius:14px;border:1px solid var(--border);overflow-x:auto;backdrop-filter:blur(20px);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 18px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--dim);transition:all .2s;white-space:nowrap;border:none;background:transparent;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
@@ -53,14 +48,10 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .tab-content{display:none}
 .tab-content.active{display:block;animation:fade .35s ease}
 @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-
-/* GRID */
 .grid{display:grid;gap:16px}
 .g4{grid-template-columns:repeat(4,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
 .g2{grid-template-columns:repeat(2,1fr)}
-
-/* CARDS */
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:all .25s;position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);pointer-events:none}
 .card:hover{border-color:rgba(255,255,255,.15);box-shadow:0 8px 40px rgba(0,0,0,.4)}
@@ -74,10 +65,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .kpi-value.pos{background:linear-gradient(180deg,#7dffb0 0%,#00e676 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .kpi-value.neg{background:linear-gradient(180deg,#ff9ba3 0%,#ff4757 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .kpi-sub{font-size:12.5px;color:var(--dim);margin-top:8px}
-
 .sec-title{font-size:16px;font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:10px;color:#fff}
-
-/* FORMS */
 .fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 .fgrid3{grid-template-columns:repeat(3,1fr)}
 .fg{display:flex;flex-direction:column;gap:7px}
@@ -86,40 +74,31 @@ label{font-size:12px;color:var(--dim);font-weight:500;text-transform:uppercase;l
 input,select{padding:11px 14px;background:rgba(5,5,15,.6);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;transition:all .2s;width:100%}
 input:focus,select:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,45,85,.15),0 0 20px rgba(255,45,85,.15)}
 input::placeholder{color:#4a4a60}
-
-/* TABLE */
 .tbl-wrap{overflow-x:auto;margin:0 -22px;padding:0 22px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:left;padding:14px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:14px 12px;border-bottom:1px solid rgba(90,100,160,.08);white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(255,255,255,.025)}
-
 .badge{display:inline-block;padding:4px 11px;border-radius:7px;font-size:11.5px;font-weight:600;letter-spacing:.3px}
 .b-ok{background:rgba(0,230,118,.15);color:var(--green);box-shadow:0 0 12px rgba(0,230,118,.2)}
 .b-no{background:rgba(255,71,87,.15);color:#ff8a92;box-shadow:0 0 12px rgba(255,71,87,.15)}
 .b-warn{background:rgba(255,184,0,.15);color:var(--yellow);box-shadow:0 0 12px rgba(255,184,0,.2)}
 .b-cyan{background:rgba(0,212,255,.15);color:var(--cyan)}
-
 .chart-wrap{position:relative;height:300px;width:100%}
-
 .empty{text-align:center;padding:50px 20px;color:var(--dim);font-size:14px}
 .empty-ico{font-size:44px;margin-bottom:12px;opacity:.35}
-
-/* PROGRESS */
 .prog{background:rgba(255,255,255,.05);height:14px;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--border)}
 .prog-fill{height:100%;border-radius:10px;background:var(--grad);transition:width .8s cubic-bezier(.4,0,.2,1);position:relative;box-shadow:0 0 20px rgba(255,45,85,.5)}
 .prog-fill.cyan{background:var(--grad2);box-shadow:0 0 20px rgba(0,212,255,.5)}
 .prog-fill.green{background:linear-gradient(90deg,#00e676,#7dffb0);box-shadow:0 0 20px rgba(0,230,118,.5)}
 .prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2.5s infinite}
 @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-
 .obj-row{margin-bottom:22px}
 .obj-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .obj-name{font-size:14px;font-weight:600}
 .obj-stats{font-size:13px;color:var(--dim)}
 .obj-stats strong{color:#fff;font-family:'Space Grotesk',sans-serif}
-
 @media(max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}.fgrid,.fgrid3{grid-template-columns:1fr}.app{padding:16px 14px 50px}.kpi-value{font-size:24px}}
 </style>
 </head>
@@ -131,7 +110,8 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="logo-icon">⚡</div>
     <span>PokéMarges <span class="accent">Pro</span></span>
   </div>
-  <div class="h-actions">    <button class="btn" id="auth-btn">🔐 Se connecter</button>
+  <div class="h-actions">
+    <button class="btn" id="auth-btn">🔐 Se connecter</button>
     <button class="btn" onclick="exporter()">📥 Exporter</button>
     <button class="btn btn-danger" onclick="resetAll()">🗑️ Reset</button>
   </div>
@@ -147,7 +127,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <button class="tab" data-tab="collection">🎴 Ma collection</button>
 </nav>
 
-<!-- TAB 1: DASHBOARD -->
 <div class="tab-content active" id="tab-dashboard">
   <div class="grid g4" style="margin-bottom:16px">
     <div class="card kpi"><div class="kpi-label">Capital investi</div><div class="kpi-value" id="k-investi">0 €</div><div class="kpi-sub">Coût de revient total</div></div>
@@ -162,7 +141,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <div class="card"><div class="sec-title">🎯 Top 5 opportunités</div><div id="top-opp"></div></div>
 </div>
 
-<!-- TAB 2: CARTES -->
 <div class="tab-content" id="tab-cartes">
   <div class="grid g2" style="margin-bottom:16px">
     <div class="card">
@@ -186,7 +164,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
         <strong style="color:#fff">EV (Espérance de gain)</strong> = P10 × Marge(10) + P9 × Marge(9)<br><br>
         <strong style="color:#fff">Seuil P10</strong> = probabilité minimale d'obtenir un 10 pour être rentable<br><br>
         <strong style="color:var(--pink)">Règle d'or :</strong> ne grade que si la marge en CCC 9 est positive OU si ta P10 dépasse le seuil calculé<br><br>
-        <strong style="color:#fff">Frais plateforme :</strong> 12,3 % appliqués par défaut (modifiable dans le code, ligne <code style="color:var(--cyan)">const TAUX_FRAIS</code>)
+        <strong style="color:#fff">Frais plateforme :</strong> 12,3 % appliqués par défaut
       </p>
     </div>
   </div>
@@ -195,7 +173,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-cartes"></tbody></table></div></div>
 </div>
 
-<!-- TAB 3: VENTES -->
 <div class="tab-content" id="tab-ventes">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">💸 Enregistrer une vente</div>
@@ -219,7 +196,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-ventes"></tbody></table></div></div>
 </div>
 
-<!-- TAB 4: MENSUEL -->
 <div class="tab-content" id="tab-mensuel">
   <div class="card" style="margin-bottom:16px"><div class="sec-title">📅 Activité mensuelle</div><div class="chart-wrap" style="height:340px"><canvas id="ch-mensuel"></canvas></div></div>
   <div class="card"><div class="sec-title">📊 Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
@@ -227,7 +203,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-mensuel"></tbody></table></div></div>
 </div>
 
-<!-- TAB 5: OBJECTIFS -->
 <div class="tab-content" id="tab-objectifs">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">⚙️ Définir mes objectifs annuels</div>
@@ -241,7 +216,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <div class="card"><div class="sec-title">🎯 Progression</div><div id="obj-progress"></div></div>
 </div>
 
-<!-- TAB 6: STOCK ANNUEL -->
 <div class="tab-content" id="tab-stock">
   <div class="grid g3" style="margin-bottom:16px">
     <div class="card kpi"><div class="kpi-label">Cartes en stock</div><div class="kpi-value" id="s-stock">0</div></div>
@@ -254,7 +228,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-stock"></tbody></table></div></div>
 </div>
 
-<!-- TAB 7: COLLECTION -->
 <div class="tab-content" id="tab-collection">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">🎴 Ajouter une carte à ma collection perso</div>
@@ -281,18 +254,13 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 </div>
 
 </div>
-<!-- ============================================================
-     FIN PARTIE 1
-     NE RIEN AJOUTER APRÈS POUR L'INSTANT
-     ============================================================ -->
-    <script>
+<script>
 /* ============================================================
-   PARTIE 2/3 — LOGIQUE JAVASCRIPT
+   POKÉMARGES PRO — PARTIE 2/3 : LOGIQUE
    ============================================================ */
 
-const TAUX_FRAIS = 0.123; // 12,3 % frais plateforme (modifiable)
+const TAUX_FRAIS = 0.123;
 
-/* ---------- STATE ---------- */
 let state = {
   cartes: [],
   ventes: [],
@@ -300,14 +268,75 @@ let state = {
   objectifs: { ca: 5000, marge: 2000, cartes: 150 }
 };
 
-/* ---------- PERSISTANCE ---------- */
+/* ---------- DEXIE CLOUD ---------- */
+const db = new Dexie('PokemargesDB', { addons: [dexieCloud] });
+db.version(1).stores({
+  appState: 'id'
+});
+
+db.cloud.configure({
+  databaseUrl: 'https://zkb6tnho2.dexie.cloud',
+  requireAuth: true
+});
+
+async function cloudSave() {
+  try {
+    await db.appState.put({ id: 'main', data: state, updatedAt: Date.now() });
+  } catch (e) { console.warn('Cloud save error:', e); }
+}
+
+async function cloudLoad() {
+  try {
+    const row = await db.appState.get('main');
+    if (row && row.data) {
+      state.cartes = row.data.cartes || [];
+      state.ventes = row.data.ventes || [];
+      state.collection = row.data.collection || [];
+      state.objectifs = row.data.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
+      return true;
+    }
+  } catch (e) { console.warn('Cloud load error:', e); }
+  return false;
+}
+
+function updateAuthButton() {
+  const btn = document.getElementById('auth-btn');
+  if (!btn) return;
+  try {
+    const user = db.cloud.currentUser.value;
+    if (user && user.isLoggedIn) {
+      btn.innerHTML = '👤 ' + (user.email || user.userId || 'Connecté');
+      btn.onclick = () => {
+        if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) {
+          db.cloud.logout();
+        }
+      };
+    } else {
+      btn.innerHTML = '🔐 Se connecter';
+      btn.onclick = () => db.cloud.login();
+    }
+  } catch (e) {
+    console.warn('Auth button error:', e);
+  }
+}
+
+db.cloud.currentUser.subscribe(async (user) => {
+  updateAuthButton();
+  if (user && user.isLoggedIn) {
+    const ok = await cloudLoad();
+    if (ok) renderAll();
+  }
+});
+
+/* ---------- PERSISTANCE LOCALE ---------- */
 function save() {
-  try { localStorage.setItem('pokemarges_v2', JSON.stringify(state)); }
+  try { localStorage.setItem('pokemarges_v3', JSON.stringify(state)); }
   catch(e) { console.warn('Save error', e); }
   cloudSave();
 }
+
 function load() {
-  const raw = localStorage.getItem('pokemarges_v2');
+  const raw = localStorage.getItem('pokemarges_v3');
   if (!raw) return;
   try {
     const p = JSON.parse(raw);
@@ -319,23 +348,13 @@ function load() {
 }
 
 /* ---------- FORMATAGE ---------- */
-function fmt(n) {
-  n = +n || 0;
-  return n.toFixed(2).replace('.', ',') + ' €';
-}
-function fmtP(n) {
-  n = +n || 0;
-  return n.toFixed(1).replace('.', ',') + ' %';
-}
+function fmt(n) { n = +n || 0; return n.toFixed(2).replace('.', ',') + ' €'; }
+function fmtP(n) { n = +n || 0; return n.toFixed(1).replace('.', ',') + ' %'; }
 function fmtInt(n) { return Math.round(+n || 0).toString(); }
 
 /* ---------- CALCULS ---------- */
-function coutRevient(c) {
-  return (+c.achat || 0) + (+c.port || 0) + (+c.grad || 0);
-}
-function netCCC(c, prixRevente) {
-  return prixRevente * (1 - TAUX_FRAIS) - coutRevient(c);
-}
+function coutRevient(c) { return (+c.achat || 0) + (+c.port || 0) + (+c.grad || 0); }
+function netCCC(c, prixRevente) { return prixRevente * (1 - TAUX_FRAIS) - coutRevient(c); }
 function calcEV(c) {
   const p10 = (+c.prob || 0) / 100;
   return p10 * netCCC(c, +c.p10 || 0) + (1 - p10) * netCCC(c, +c.p9 || 0);
@@ -353,7 +372,7 @@ function roiCarte(c) {
   return (calcEV(c) / cout) * 100;
 }
 
-/* ---------- NAVIGATION ONGLETS ---------- */
+/* ---------- NAVIGATION ---------- */
 function initTabs() {
   document.querySelectorAll('.tab').forEach(t => {
     t.onclick = () => {
@@ -367,7 +386,7 @@ function initTabs() {
   });
 }
 
-/* ---------- AJOUTER CARTE ---------- */
+/* ---------- CARTES ---------- */
 function ajouterCarte() {
   const nom = document.getElementById('c-nom').value.trim();
   if (!nom) { alert('Donne un nom à la carte'); return; }
@@ -391,15 +410,15 @@ function ajouterCarte() {
 
 function supprimerCarte(id) {
   if (!confirm('Supprimer cette carte ?')) return;
-  state.cartes = state.cartes.filter(c => c.id !== id);
+  state.cartes = state.cartes.filter(c => String(c.id) !== String(id));
   save();
   renderAll();
 }
 
-/* ---------- AJOUTER VENTE ---------- */
+/* ---------- VENTES ---------- */
 function ajouterVente() {
   const carteId = document.getElementById('v-carte').value;
-  if (!carteId) { alert("Ajoute d'abord une carte dans l'onglet Analyse cartes"); return; }
+  if (!carteId) { alert("Ajoute d'abord une carte"); return; }
   const carte = state.cartes.find(c => String(c.id) === String(carteId));
   if (!carte) { alert('Carte introuvable'); return; }
   state.ventes.push({
@@ -419,7 +438,7 @@ function ajouterVente() {
 
 function supprimerVente(id) {
   if (!confirm('Supprimer cette vente ?')) return;
-  state.ventes = state.ventes.filter(v => v.id !== id);
+  state.ventes = state.ventes.filter(v => String(v.id) !== String(id));
   save();
   renderAll();
 }
@@ -537,7 +556,6 @@ function renderObjectifs() {
     ligne('📈 Marge nette', margeActuelle, o.marge, 'marge') +
     ligne('🃏 Cartes achetées', cartesAchetees, o.cartes, 'int');
 
-  // Charger les valeurs des inputs
   const elCa = document.getElementById('o-ca');
   const elMarge = document.getElementById('o-marge');
   const elCartes = document.getElementById('o-cartes');
@@ -546,9 +564,8 @@ function renderObjectifs() {
   if (elCartes) elCartes.value = o.cartes;
 }
 
-/* ---------- STOCK ANNUEL ---------- */
+/* ---------- STOCK ---------- */
 function calculerStock() {
-  // Regroupe par mois les achats et ventes
   const mois = {};
   state.cartes.forEach(c => {
     const m = (c.date || '').slice(0, 7);
@@ -565,11 +582,10 @@ function calculerStock() {
     mois[m].ventes++;
   });
 
-  // Calcul stock cumulé
   const cles = Object.keys(mois).sort();
   let stockCumule = 0;
   let valeurCumulee = 0;
-  const result = cles.map(m => {
+  return cles.map(m => {
     stockCumule += mois[m].achats - mois[m].ventes;
     valeurCumulee += mois[m].investi;
     return {
@@ -580,8 +596,6 @@ function calculerStock() {
       valeur: Math.max(0, valeurCumulee)
     };
   });
-
-  return result;
 }
 
 function renderStock() {
@@ -615,7 +629,7 @@ function renderStock() {
   </tr>`).join('');
 }
 
-/* ---------- COLLECTION PERSO ---------- */
+/* ---------- COLLECTION ---------- */
 function ajouterCollection() {
   const nom = document.getElementById('p-nom').value.trim();
   if (!nom) { alert('Donne un nom à la carte'); return; }
@@ -639,7 +653,7 @@ function ajouterCollection() {
 
 function supprimerCollection(id) {
   if (!confirm('Retirer cette carte de ta collection ?')) return;
-  state.collection = state.collection.filter(c => c.id !== id);
+  state.collection = state.collection.filter(c => String(c.id) !== String(id));
   save();
   renderAll();
 }
@@ -660,7 +674,7 @@ function renderCollection() {
   if (elNb) elNb.textContent = total;
 
   if (!state.collection.length) {
-    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-ico">🎴</div>Aucune carte dans ta collection perso. Ajoutes-en une ci-dessus.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-ico">🎴</div>Aucune carte dans ta collection perso.</td></tr>';
     return;
   }
   tb.innerHTML = state.collection.map(c => `<tr>
@@ -688,82 +702,18 @@ function exporter() {
 }
 
 function resetAll() {
-  if (!confirm('⚠️ ATTENTION : cela va effacer TOUTES tes données (cartes, ventes, collection). Continuer ?')) return;
+  if (!confirm('⚠️ ATTENTION : cela va effacer TOUTES tes données. Continuer ?')) return;
   if (!confirm('Vraiment sûr ? Cette action est irréversible.')) return;
   state = { cartes: [], ventes: [], collection: [], objectifs: { ca: 5000, marge: 2000, cartes: 150 } };
   save();
   location.reload();
-}/* ============================================================
-   DEXIE CLOUD SYNC
-   ============================================================ */
-const db = new Dexie('PokemargesDB', { addons: [dexieCloud] });
-db.version(1).stores({
-  appState: 'id'
-});
-
-db.cloud.configure({
-  databaseUrl: 'https://zkb6tnho2.dexie.cloud',
-  requireAuth: true
-});
-
-async function cloudSave() {
-  try {
-    await db.appState.put({ id: 'main', data: state, updatedAt: Date.now() });
-  } catch (e) { console.warn('Cloud save error:', e); }
 }
-
-async function cloudLoad() {
-  try {
-    const row = await db.appState.get('main');
-    if (row && row.data) {
-      state.cartes = row.data.cartes || [];
-      state.ventes = row.data.ventes || [];
-      state.collection = row.data.collection || [];
-      state.objectifs = row.data.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
-      return true;
-    }
-  } catch (e) { console.warn('Cloud load error:', e); }
-  return false;
-}
-
-function updateAuthButton() {
-  const btn = document.getElementById('auth-btn');
-  if (!btn) return;
-  const user = db.cloud.currentUser.value;
-  if (user && user.isLoggedIn) {
-    btn.innerHTML = '👤 ' + (user.email || user.userId || 'Connecté');
-    btn.onclick = () => {
-      if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) {
-        db.cloud.logout();
-      }
-    };
-  } else {
-    btn.innerHTML = '🔐 Se connecter';
-    btn.onclick = () => db.cloud.login();
-  }
-}
-
-db.cloud.currentUser.subscribe(async (user) => {
-  updateAuthButton();
-  if (user && user.isLoggedIn) {
-    const ok = await cloudLoad();
-    if (ok) renderAll();
-  }
-});
-
-
-
-
-/* ============================================================
-   FIN PARTIE 2/3
-   ============================================================ */
 </script>
 <script>
 /* ============================================================
-   PARTIE 3/3 — GRAPHIQUES + DASHBOARD + INIT
+   POKÉMARGES PRO — PARTIE 3/3 : GRAPHIQUES + INIT
    ============================================================ */
 
-/* ---------- CONFIG GLOBALE CHART.JS ---------- */
 Chart.defaults.color = '#7a7a95';
 Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.font.size = 12;
@@ -792,7 +742,6 @@ function renderDashboard() {
   setKpi('k-ev', fmt(ev), ev >= 0);
   setKpi('k-roi', fmtP(roi), roi >= 0);
 
-  // Top 5 opportunités
   const top = state.cartes
     .map(c => ({ ...c, ev: calcEV(c), roi: roiCarte(c) }))
     .sort((a, b) => b.ev - a.ev)
@@ -885,17 +834,12 @@ function renderChartTreso() {
           titleColor: '#fff',
           bodyColor: '#eaeaf5',
           padding: 12,
-          callbacks: {
-            label: ctx => 'Trésorerie : ' + fmt(ctx.parsed.y)
-          }
+          callbacks: { label: ctx => 'Trésorerie : ' + fmt(ctx.parsed.y) }
         }
       },
       scales: {
         x: { grid: { display: false } },
-        y: {
-          grid: { color: 'rgba(90,100,160,.1)' },
-          ticks: { callback: v => v + ' €' }
-        }
+        y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } }
       }
     }
   });
@@ -1002,7 +946,6 @@ function renderMensuel() {
     }).join('');
   }
 
-  // Graphique mensuel
   const canvas = document.getElementById('ch-mensuel');
   if (!canvas) return;
   if (chMensuel) chMensuel.destroy();
@@ -1017,56 +960,27 @@ function renderMensuel() {
     data: {
       labels,
       datasets: [
-        {
-          label: 'Investi',
-          data: investData,
-          backgroundColor: 'rgba(255,45,85,.7)',
-          borderColor: '#ff2d55',
-          borderWidth: 1,
-          borderRadius: 6
-        },
-        {
-          label: 'CA net',
-          data: caData,
-          backgroundColor: 'rgba(0,212,255,.7)',
-          borderColor: '#00d4ff',
-          borderWidth: 1,
-          borderRadius: 6
-        },
-        {
-          label: 'Marge',
-          data: margeData,
-          backgroundColor: 'rgba(0,230,118,.7)',
-          borderColor: '#00e676',
-          borderWidth: 1,
-          borderRadius: 6
-        }
+        { label: 'Investi', data: investData, backgroundColor: 'rgba(255,45,85,.7)', borderColor: '#ff2d55', borderWidth: 1, borderRadius: 6 },
+        { label: 'CA net', data: caData, backgroundColor: 'rgba(0,212,255,.7)', borderColor: '#00d4ff', borderWidth: 1, borderRadius: 6 },
+        { label: 'Marge', data: margeData, backgroundColor: 'rgba(0,230,118,.7)', borderColor: '#00e676', borderWidth: 1, borderRadius: 6 }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'top',
-          labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' }
-        },
+        legend: { position: 'top', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } },
         tooltip: {
           backgroundColor: 'rgba(10,10,25,.95)',
           borderColor: 'rgba(255,45,85,.5)',
           borderWidth: 1,
           padding: 12,
-          callbacks: {
-            label: ctx => ctx.dataset.label + ' : ' + fmt(ctx.parsed.y)
-          }
+          callbacks: { label: ctx => ctx.dataset.label + ' : ' + fmt(ctx.parsed.y) }
         }
       },
       scales: {
         x: { grid: { display: false } },
-        y: {
-          grid: { color: 'rgba(90,100,160,.1)' },
-          ticks: { callback: v => v + ' €' }
-        }
+        y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } }
       }
     }
   });
@@ -1123,10 +1037,7 @@ function renderChartStock() {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          position: 'top',
-          labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' }
-        },
+        legend: { position: 'top', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } },
         tooltip: {
           backgroundColor: 'rgba(10,10,25,.95)',
           borderColor: 'rgba(0,212,255,.5)',
@@ -1136,19 +1047,8 @@ function renderChartStock() {
       },
       scales: {
         x: { grid: { display: false } },
-        y: {
-          type: 'linear',
-          position: 'left',
-          grid: { color: 'rgba(90,100,160,.1)' },
-          title: { display: true, text: 'Cartes' }
-        },
-        y1: {
-          type: 'linear',
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          title: { display: true, text: '€' },
-          ticks: { callback: v => v + ' €' }
-        }
+        y: { type: 'linear', position: 'left', grid: { color: 'rgba(90,100,160,.1)' }, title: { display: true, text: 'Cartes' } },
+        y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '€' }, ticks: { callback: v => v + ' €' } }
       }
     }
   });
@@ -1165,27 +1065,25 @@ function renderAll() {
   renderMensuel();
   renderChartTreso();
   renderChartRepartition();
-  renderChartMensuelSafe();
   renderChartStock();
 }
 
-function renderChartMensuelSafe() {
-  // Appelé après renderMensuel() pour dessiner le graphique
-  // (renderMensuel gère déjà la partie graphique, cette fonction est un garde-fou)
-}
-
-/* ---------- INITIALISATION ---------- */
+/* ---------- INIT ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
   load();
   initTabs();
   renderAll();
+
   try {
     const ok = await cloudLoad();
     if (ok) renderAll();
   } catch (e) { console.warn('Init cloud load failed', e); }
+
   updateAuthButton();
+
   console.log('%c⚡ PokéMarges Pro + Dexie Cloud chargé', 'color:#ff2d55;font-weight:bold;font-size:14px');
 });
 </script>
