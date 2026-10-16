@@ -6,7 +6,8 @@
 <title>PokéMarges Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dexie@4.0.10/dist/dexie.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dexie-cloud-addon@4.0.7/dist/dexie-cloud-addon.js"></script>
+<script src="https://unpkg.com/rxjs@7/dist/bundles/rxjs.umd.js"></script>
+<script src="https://unpkg.com/dexie-cloud-addon/dist/umd/dexie-cloud-addon.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -269,7 +270,7 @@ let state = {
 };
 
 /* ---------- DEXIE CLOUD ---------- */
-const db = new Dexie('PokemargesDB', { addons: [dexieCloud] });
+const db = new Dexie('PokemargesDB', { addons: [DexieCloud.dexieCloud] });
 db.version(1).stores({
   appState: 'id'
 });
@@ -1072,7 +1073,6 @@ function renderAll() {
 window.addEventListener('DOMContentLoaded', async () => {
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
-
   load();
   initTabs();
   renderAll();
