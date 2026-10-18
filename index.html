@@ -13,20 +13,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
---bg:#05050d;--bg2:#0a0a18;--card:rgba(20,22,40,.55);--card-solid:#14162a;
---border:rgba(90,100,160,.18);--text:#eaeaf5;--dim:#7a7a95;
---pink:#ff2d55;--cyan:#00d4ff;--orange:#ff6b35;--purple:#9d4edd;
---green:#00e676;--yellow:#ffb800;--red:#ff4757;
---grad:linear-gradient(135deg,#ff2d55 0%,#ff6b35 100%);
---grad2:linear-gradient(135deg,#00d4ff 0%,#9d4edd 100%);
-}
+:root{--bg:#05050d;--bg2:#0a0a18;--card:rgba(20,22,40,.55);--card-solid:#14162a;--border:rgba(90,100,160,.18);--text:#eaeaf5;--dim:#7a7a95;--pink:#ff2d55;--cyan:#00d4ff;--orange:#ff6b35;--purple:#9d4edd;--green:#00e676;--yellow:#ffb800;--red:#ff4757;--grad:linear-gradient(135deg,#ff2d55 0%,#ff6b35 100%);--grad2:linear-gradient(135deg,#00d4ff 0%,#9d4edd 100%)}
 html,body{min-height:100%}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);background-image:
-radial-gradient(circle at 15% 0%,rgba(255,45,85,.10),transparent 45%),
-radial-gradient(circle at 85% 10%,rgba(0,212,255,.06),transparent 45%),
-radial-gradient(circle at 50% 100%,rgba(157,78,221,.08),transparent 50%);
-background-attachment:fixed;overflow-x:hidden}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);background-image:radial-gradient(circle at 15% 0%,rgba(255,45,85,.10),transparent 45%),radial-gradient(circle at 85% 10%,rgba(0,212,255,.06),transparent 45%),radial-gradient(circle at 50% 100%,rgba(157,78,221,.08),transparent 50%);background-attachment:fixed;overflow-x:hidden}
 .app{max-width:1440px;margin:0 auto;padding:24px 28px 60px}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 28px;flex-wrap:wrap;gap:16px}
 .logo{display:flex;align-items:center;gap:14px;font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
@@ -112,7 +101,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 </head>
 <body>
 <div class="app">
-
 <header>
   <div class="logo">
     <div class="logo-icon">P</div>
@@ -274,16 +262,16 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="fgrid fgrid3">
       <div class="fg"><label>Nom du produit</label><input type="text" id="sc-nom" placeholder="Ex: Display Écarlate"></div>
       <div class="fg">
-  <label>Type / Nom</label>
-  <input type="text" id="sc-type" list="liste-types-scelles" placeholder="Ex: Display, Coffret...">
-  <datalist id="liste-types-scelles">
-    <option value="Display">
-    <option value="ETB">
-    <option value="Coffret">
-    <option value="Tin">
-    <option value="Tripack">
-  </datalist>
-</div>
+        <label>Type / Nom</label>
+        <input type="text" id="sc-type" list="liste-types-scelles" placeholder="Ex: Display, Coffret...">
+        <datalist id="liste-types-scelles">
+          <option value="Display">
+          <option value="ETB">
+          <option value="Coffret">
+          <option value="Tin">
+          <option value="Tripack">
+        </datalist>
+      </div>
       <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="sc-achat" step="0.01" value="0"></div>
       <div class="fg"><label>Quantité</label><input type="number" id="sc-qte" value="1" min="1"></div>
       <div class="fg"><label>Valeur actuelle (€)</label><input type="number" id="sc-valeur" step="0.01" value="0"></div>
@@ -328,24 +316,24 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 <div class="toast-container" id="toast-container"></div>
 <script>
 /* ============================================================
-   POKÉMARGES PRO V3 — PARTIE 2/3 : LOGIQUE & CLOUD
+   POKÉMARGES PRO V4 — PARTIE 2/3 : LOGIQUE GLOBALE
    ============================================================ */
 
+// Le State (toutes les données sont ici)
 let state = {
   cartes: [],
   ventes: [],
   collection: [],
   scelles: [],
-    typesScelles: ['Display', 'ETB', 'Coffret', 'Tin', 'Tripack'],
+  typesScelles: ['Display', 'ETB', 'Coffret', 'Tin', 'Tripack'],
   objectifs: { ca: 5000, marge: 2000, cartes: 150 },
   parametres: { tauxFrais: 12.3 }
 };
 
-/* ---------- DEXIE CLOUD ---------- */
+/* ---------- DEXIE CLOUD (Version ultra-stable) ---------- */
 const db = new Dexie('PokemargesDB', { addons: [DexieCloud.dexieCloud] });
-db.version(2).stores({
-  appState: 'id',
-  sealed: 'id, nom, type, updatedAt'
+db.version(1).stores({
+  appState: 'id' // Une seule table pour TOUT stocker
 });
 
 db.cloud.configure({
@@ -363,11 +351,8 @@ async function cloudLoad() {
   try {
     const row = await db.appState.get('main');
     if (row && row.data) {
-      state.cartes = row.data.cartes || [];
-      state.ventes = row.data.ventes || [];
-      state.collection = row.data.collection || [];
-      state.objectifs = row.data.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
-      state.parametres = row.data.parametres || { tauxFrais: 12.3 };
+      // On écrase le state local avec le state du cloud
+      state = { ...state, ...row.data }; 
       return true;
     }
   } catch (e) { console.warn('Cloud load error:', e); }
@@ -383,9 +368,7 @@ function updateAuthButton() {
       btn.innerHTML = 'Connecté : ' + (user.email ? user.email.split('@')[0] : 'Utilisateur');
       btn.style.borderColor = 'var(--green)';
       btn.onclick = () => {
-        if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) {
-          db.cloud.logout();
-        }
+        if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) db.cloud.logout();
       };
     } else {
       btn.innerHTML = 'Se connecter';
@@ -403,10 +386,10 @@ db.cloud.currentUser.subscribe(async (user) => {
   }
 });
 
-/* ---------- PERSISTANCE LOCALE ---------- */
+/* ---------- PERSISTANCE LOCALE & SAUVEGARDE ---------- */
 function save() {
   try { localStorage.setItem('pokemarges_v4', JSON.stringify(state)); }
-  catch(e) { console.warn('Save error', e); }
+  catch(e) { console.warn('Local save error', e); }
   cloudSave();
 }
 
@@ -415,15 +398,11 @@ function load() {
   if (!raw) return;
   try {
     const p = JSON.parse(raw);
-    state.cartes = p.cartes || [];
-    state.ventes = p.ventes || [];
-    state.collection = p.collection || [];
-    state.objectifs = p.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
-    state.parametres = p.parametres || { tauxFrais: 12.3 };
-  } catch(e) { console.warn('Load error', e); }
+    state = { ...state, ...p };
+  } catch(e) { console.warn('Local load error', e); }
 }
 
-/* ---------- UTILITAIRES & TOASTS ---------- */
+/* ---------- UTILITAIRES ---------- */
 function fmt(n) { n = +n || 0; return n.toFixed(2).replace('.', ',') + ' €'; }
 function fmtP(n) { n = +n || 0; return n.toFixed(1).replace('.', ',') + ' %'; }
 function fmtInt(n) { return Math.round(+n || 0).toString(); }
@@ -462,24 +441,6 @@ function roiCarte(c) {
   return (calcEV(c) / cout) * 100;
 }
 
-/* ---------- PARAMÈTRES ---------- */
-function ouvrirParametres() {
-  document.getElementById('param-taux').value = state.parametres.tauxFrais;
-  document.getElementById('modal-parametres').classList.add('active');
-}
-
-function fermerParametres() {
-  document.getElementById('modal-parametres').classList.remove('active');
-}
-
-function saveParametres() {
-  state.parametres.tauxFrais = +document.getElementById('param-taux').value || 12.3;
-  save();
-  fermerParametres();
-  showToast('Paramètres enregistrés.');
-  renderAll();
-}
-
 /* ---------- NAVIGATION ---------- */
 function initTabs() {
   document.querySelectorAll('.tab').forEach(t => {
@@ -494,7 +455,23 @@ function initTabs() {
   });
 }
 
-/* ---------- GESTION CARTES ---------- */
+/* ---------- PARAMÈTRES ---------- */
+function ouvrirParametres() {
+  document.getElementById('param-taux').value = state.parametres.tauxFrais;
+  document.getElementById('modal-parametres').classList.add('active');
+}
+function fermerParametres() {
+  document.getElementById('modal-parametres').classList.remove('active');
+}
+function saveParametres() {
+  state.parametres.tauxFrais = +document.getElementById('param-taux').value || 12.3;
+  save();
+  fermerParametres();
+  showToast('Paramètres enregistrés.');
+  renderAll();
+}
+
+/* ---------- CARTES ---------- */
 function ajouterCarte() {
   const nom = document.getElementById('c-nom').value.trim();
   if (!nom) { showToast('Donne un nom à la carte.', true); return; }
@@ -557,7 +534,7 @@ function renderCartes() {
   }).join('');
 }
 
-/* ---------- GESTION VENTES ---------- */
+/* ---------- VENTES ---------- */
 function ajouterVente() {
   const carteId = document.getElementById('v-carte').value;
   if (!carteId) { showToast('Sélectionne une carte.', true); return; }
@@ -624,6 +601,7 @@ function renderVentes() {
 
   const ca = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
   const marge = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
+  
   if (document.getElementById('v-ca')) document.getElementById('v-ca').textContent = fmt(ca);
   if (document.getElementById('v-marge')) {
     document.getElementById('v-marge').textContent = fmt(marge);
@@ -788,14 +766,14 @@ function ajouterScelle() {
   const nom = document.getElementById('sc-nom').value.trim();
   if (!nom) { showToast('Donne un nom au produit.', true); return; }
 
-  // 1. On récupère le type et on le mémorise s'il est nouveau
   const typeScelle = document.getElementById('sc-type').value.trim() || 'Autre';
-  if (!state.typesScelles) state.typesScelles = []; // Sécurité
+  
+  // Mémorisation du type
+  if (!state.typesScelles) state.typesScelles = [];
   if (!state.typesScelles.includes(typeScelle)) {
     state.typesScelles.push(typeScelle);
   }
 
-  // 2. On ajoute le produit avec ce type
   state.scelles.push({
     id: Date.now() + Math.random().toString(),
     nom,
@@ -820,10 +798,13 @@ function supprimerScelle(id) {
   showToast('Produit scellé supprimé.');
 }
 
-function renderScelles() {  const datalist = document.getElementById('liste-types-scelles');
+function renderScelles() {
+  // Mise à jour de la mémoire des types
+  const datalist = document.getElementById('liste-types-scelles');
   if (datalist && state.typesScelles) {
     datalist.innerHTML = state.typesScelles.map(t => `<option value="${t}">`).join('');
   }
+
   const tb = document.getElementById('tb-scelles');
   if (!tb) return;
 
@@ -872,37 +853,29 @@ function exporter() {
 /* ---------- API TEMPS RÉEL (TCGdex) ---------- */
 async function actualiserPrixAPI() {
   if (!state.cartes.length) { showToast('Aucune carte à actualiser.', true); return; }
-  
   showToast('Recherche des prix en cours...');
   let updateCount = 0;
   
   for (let i = 0; i < state.cartes.length; i++) {
     const carte = state.cartes[i];
     try {
-      // API TCGdex gratuite
       const query = encodeURIComponent(carte.nom.split(' ')[0]);
       const res = await fetch(`https://api.tcgdex.net/v2/fr/cards?name=${query}`);
       const data = await res.json();
       
       if (data && data.length > 0) {
-        // On prend la première correspondance avec prix Cardmarket
         const matchedCard = data.find(c => c.pricing && c.pricing.cardmarket) || data[0];
-        
         if (matchedCard && matchedCard.pricing && matchedCard.pricing.cardmarket) {
           const prixMarche = matchedCard.pricing.cardmarket.avg;
           if (prixMarche > 0) {
-            // Simulation des prix gradés (ex: CCC 10 vaut 1.5x le prix raw, CCC 9 vaut le prix raw)
             carte.p10 = Math.round(prixMarche * 1.5 * 100) / 100;
             carte.p9 = Math.round(prixMarche * 1.0 * 100) / 100;
             updateCount++;
           }
         }
       }
-      // Pause pour respecter l'API
       await new Promise(r => setTimeout(r, 300));
-    } catch (e) {
-      console.warn('API error for', carte.nom, e);
-    }
+    } catch (e) { console.warn('API error:', e); }
   }
 
   if (updateCount > 0) {
@@ -910,13 +883,13 @@ async function actualiserPrixAPI() {
     renderAll();
     showToast(`${updateCount} prix mis à jour via TCGdex !`);
   } else {
-  showToast("Aucun prix trouvé sur l'API.", true);
+    showToast("Aucun prix trouvé sur l'API.", true);
   }
 }
 </script>
 <script>
 /* ============================================================
-   POKÉMARGES PRO V3 — PARTIE 3/3 : GRAPHIQUES & INITIALISATION
+   POKÉMARGES PRO V4 — PARTIE 3/3 : GRAPHIQUES & INITIALISATION
    ============================================================ */
 
 Chart.defaults.color = '#7a7a95';
@@ -926,7 +899,7 @@ Chart.defaults.borderColor = 'rgba(90,100,160,.15)';
 
 let chTreso, chRep, chMensuel, chStock;
 
-/* ---------- DASHBOARD ---------- */
+/* ---------- DASHBOARD (KPIs & TOP 5) ---------- */
 function renderDashboard() {
   const investi = state.cartes.reduce((s, c) => s + coutRevient(c), 0);
   const ev = state.cartes.reduce((s, c) => s + calcEV(c), 0);
@@ -988,6 +961,7 @@ function renderChartTreso() {
   const labels = [];
   const data = [];
   let cumul = 0;
+  
   ventesTri.forEach(v => {
     cumul += (v.prix - v.frais);
     labels.push(v.date);
@@ -1257,7 +1231,7 @@ function renderChartStock() {
   });
 }
 
-/* ---------- RENDER ALL ---------- */
+/* ---------- RENDER ALL (Mise à jour globale de l'écran) ---------- */
 function renderAll() {
   renderDashboard();
   renderCartes();
@@ -1272,23 +1246,29 @@ function renderAll() {
   renderChartStock();
 }
 
-/* ---------- INITIALISATION ---------- */
+/* ---------- INITIALISATION AU CHARGEMENT ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
+  // Date du jour par défaut pour le formulaire de vente
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
 
+  // 1. Charger les données locales (rapide, instantané)
   load();
   initTabs();
   renderAll();
 
+  // 2. Charger les données du cloud (si connecté) et rafraîchir l'écran
   try {
     const ok = await cloudLoad();
     if (ok) renderAll();
-  } catch (e) { console.warn('Init cloud load failed', e); }
+  } catch (e) { 
+    console.warn('Init cloud load failed', e); 
+  }
 
+  // 3. Mettre à jour le bouton de connexion
   updateAuthButton();
 
-  console.log('PokéMarges Pro V3 chargé avec succès.');
+  console.log('PokéMarges Pro V4 chargé avec succès.');
 });
 </script>
 </body>
