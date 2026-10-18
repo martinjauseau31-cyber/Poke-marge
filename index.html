@@ -126,7 +126,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <button class="tab" data-tab="objectifs">🎯 Objectifs</button>
   <button class="tab" data-tab="stock">📈 Stock annuel</button>
   <button class="tab" data-tab="collection">🎴 Ma collection</button>
-  <button class="tab" data-tab="scelles">📦 Mes Scellés</button>
 </nav>
 
 <div class="tab-content active" id="tab-dashboard">
@@ -256,18 +255,6 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 </div>
 
 </div>
-256  </div>
-257  
-258  </div>
-259  
-260  <!-- 👇 TON NOUVEL ONGLET VIENT ICI 👇 -->
-261  <div class="tab-content" id="tab-scelles">
-...
-300  </div>
-301  <!-- 👆 FIN DE L'ONGLET 👆 -->
-302  
-303  <script>
-
 <script>
 /* ============================================================
    POKÉMARGES PRO — PARTIE 2/3 : LOGIQUE
@@ -284,9 +271,8 @@ let state = {
 
 /* ---------- DEXIE CLOUD ---------- */
 const db = new Dexie('PokemargesDB', { addons: [DexieCloud.dexieCloud] });
-db.version(2).stores({
-  appState: 'id',
-  sealed: 'id, nom, type, updatedAt' // nouvelle table
+db.version(1).stores({
+  appState: 'id'
 });
 
 db.cloud.configure({
@@ -723,18 +709,6 @@ function resetAll() {
   save();
   location.reload();
 }
-
-256  </div>
-257  
-258  </div>
-259  
-260  <!-- 👇 TON NOUVEL ONGLET VIENT ICI 👇 -->
-261  <div class="tab-content" id="tab-scelles">
-...
-300  </div>
-301  <!-- 👆 FIN DE L'ONGLET 👆 -->
-302  
-303  <script>
 </script>
 <script>
 /* ============================================================
