@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PokéMarges Pro</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/dexie@4.0.7/dist/dexie.js"></script>
 <script src="https://unpkg.com/rxjs@7.8.1/dist/bundles/rxjs.umd.js"></script>
 <script src="https://unpkg.com/dexie-cloud-addon@4.0.7/dist/umd/dexie-cloud-addon.js"></script>
@@ -30,9 +30,9 @@ background-attachment:fixed;overflow-x:hidden}
 .app{max-width:1440px;margin:0 auto;padding:24px 28px 60px}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 28px;flex-wrap:wrap;gap:16px}
 .logo{display:flex;align-items:center;gap:14px;font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
-.logo-icon{width:44px;height:44px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(255,45,85,.5),inset 0 0 20px rgba(255,255,255,.1)}
+.logo-icon{width:44px;height:44px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(255,45,85,.5),inset 0 0 20px rgba(255,255,255,.1);color:white;font-weight:bold}
 .logo span.accent{background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.h-actions{display:flex;gap:10px}
+.h-actions{display:flex;gap:10px;flex-wrap:wrap}
 .btn{padding:10px 18px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:14px;font-weight:500;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
 .btn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);transform:translateY(-1px)}
 .btn-primary{background:var(--grad);border:none;color:#fff;box-shadow:0 4px 20px rgba(255,45,85,.4)}
@@ -93,13 +93,20 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 .prog-fill{height:100%;border-radius:10px;background:var(--grad);transition:width .8s cubic-bezier(.4,0,.2,1);position:relative;box-shadow:0 0 20px rgba(255,45,85,.5)}
 .prog-fill.cyan{background:var(--grad2);box-shadow:0 0 20px rgba(0,212,255,.5)}
 .prog-fill.green{background:linear-gradient(90deg,#00e676,#7dffb0);box-shadow:0 0 20px rgba(0,230,118,.5)}
-.prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2.5s infinite}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .obj-row{margin-bottom:22px}
 .obj-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .obj-name{font-size:14px;font-weight:600}
 .obj-stats{font-size:13px;color:var(--dim)}
 .obj-stats strong{color:#fff;font-family:'Space Grotesk',sans-serif}
+.search-bar{padding:10px 14px;background:rgba(5,5,15,.6);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;width:100%;margin-bottom:16px;transition:all .2s}
+.search-bar:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.15),0 0 20px rgba(0,212,255,.15)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);display:none;justify-content:center;align-items:center;z-index:1000}
+.modal-overlay.active{display:flex}
+.modal-content{background:var(--card-solid);border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--card-solid);border-left:4px solid var(--green);padding:14px 20px;border-radius:8px;color:#fff;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .3s ease forwards}
+.toast.error{border-color:var(--red)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 @media(max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}.fgrid,.fgrid3{grid-template-columns:1fr}.app{padding:16px 14px 50px}.kpi-value{font-size:24px}}
 </style>
 </head>
@@ -108,24 +115,25 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 
 <header>
   <div class="logo">
-    <div class="logo-icon">⚡</div>
+    <div class="logo-icon">P</div>
     <span>PokéMarges <span class="accent">Pro</span></span>
   </div>
   <div class="h-actions">
-    <button class="btn" id="auth-btn">🔐 Se connecter</button>
-    <button class="btn" onclick="exporter()">📥 Exporter</button>
-    <button class="btn btn-danger" onclick="resetAll()">🗑️ Reset</button>
+    <button class="btn" onclick="ouvrirParametres()">Paramètres</button>
+    <button class="btn" id="auth-btn">Se connecter</button>
+    <button class="btn" onclick="exporter()">Exporter</button>
   </div>
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-tab="dashboard">📊 Tableau de bord</button>
-  <button class="tab" data-tab="cartes">🃏 Analyse cartes</button>
-  <button class="tab" data-tab="ventes">💰 Journal ventes</button>
-  <button class="tab" data-tab="mensuel">📅 Suivi mensuel</button>
-  <button class="tab" data-tab="objectifs">🎯 Objectifs</button>
-  <button class="tab" data-tab="stock">📈 Stock annuel</button>
-  <button class="tab" data-tab="collection">🎴 Ma collection</button>
+  <button class="tab active" data-tab="dashboard">Tableau de bord</button>
+  <button class="tab" data-tab="cartes">Analyse cartes</button>
+  <button class="tab" data-tab="ventes">Journal ventes</button>
+  <button class="tab" data-tab="mensuel">Suivi mensuel</button>
+  <button class="tab" data-tab="objectifs">Objectifs</button>
+  <button class="tab" data-tab="stock">Stock annuel</button>
+  <button class="tab" data-tab="collection">Ma collection</button>
+  <button class="tab" data-tab="scelles">Mes Scellés</button>
 </nav>
 
 <div class="tab-content active" id="tab-dashboard">
@@ -136,54 +144,57 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="card kpi purple"><div class="kpi-label">ROI global</div><div class="kpi-value" id="k-roi">0 %</div><div class="kpi-sub">Rendement attendu</div></div>
   </div>
   <div class="grid g2" style="margin-bottom:16px">
-    <div class="card"><div class="sec-title">📈 Courbe de trésorerie</div><div class="chart-wrap"><canvas id="ch-treso"></canvas></div></div>
-    <div class="card"><div class="sec-title">🥧 Répartition du capital</div><div class="chart-wrap"><canvas id="ch-rep"></canvas></div></div>
+    <div class="card"><div class="sec-title">Courbe de trésorerie</div><div class="chart-wrap"><canvas id="ch-treso"></canvas></div></div>
+    <div class="card"><div class="sec-title">Répartition du capital</div><div class="chart-wrap"><canvas id="ch-rep"></canvas></div></div>
   </div>
-  <div class="card"><div class="sec-title">🎯 Top 5 opportunités</div><div id="top-opp"></div></div>
+  <div class="card"><div class="sec-title">Top 5 opportunités</div><div id="top-opp"></div></div>
 </div>
 
 <div class="tab-content" id="tab-cartes">
   <div class="grid g2" style="margin-bottom:16px">
     <div class="card">
-      <div class="sec-title">➕ Ajouter une carte</div>
+      <div class="sec-title">Ajouter une carte</div>
       <div class="fgrid">
         <div class="fg full"><label>Nom de la carte</label><input type="text" id="c-nom" placeholder="Ex: Dracaufeu ex Alt Art"></div>
-        <div class="fg"><label>Langue</label><select id="c-langue"><option>FR</option><option>JAP</option><option>EN</option><option>DE</option><option>IT</option></select></div>
-        <div class="fg"><label>Plateforme revente</label><select id="c-plateforme"><option>Vinted</option><option>eBay</option><option>Cardmarket</option><option>Voggt</option><option>Leboncoin</option><option>Autre</option></select></div>
-        <div class="fg"><label>Prix d'achat brut (€)</label><input type="number" id="c-achat" step="0.01" value="80"></div>
-        <div class="fg"><label>Frais de port (€)</label><input type="number" id="c-port" step="0.01" value="6.5"></div>
-        <div class="fg"><label>Frais gradation (€)</label><input type="number" id="c-grad" step="0.01" value="18"></div>
-        <div class="fg"><label>Probabilité P10 (%)</label><input type="number" id="c-prob" step="1" value="30" min="0" max="100"></div>
-        <div class="fg"><label>Prix revente CCC 10 (€)</label><input type="number" id="c-p10" step="0.01" value="210"></div>
-        <div class="fg"><label>Prix revente CCC 9 (€)</label><input type="number" id="c-p9" step="0.01" value="120"></div>
+        <div class="fg"><label>Langue</label><select id="c-langue"><option>FR</option><option>JAP</option><option>EN</option></select></div>
+        <div class="fg"><label>Plateforme</label><select id="c-plateforme"><option>Vinted</option><option>eBay</option><option>Cardmarket</option><option>Voggt</option><option>Autre</option></select></div>
+        <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="c-achat" step="0.01" value="0"></div>
+        <div class="fg"><label>Frais de port (€)</label><input type="number" id="c-port" step="0.01" value="0"></div>
+        <div class="fg"><label>Frais gradation (€)</label><input type="number" id="c-grad" step="0.01" value="0"></div>
+        <div class="fg"><label>Probabilité P10 (%)</label><input type="number" id="c-prob" step="1" value="30"></div>
+        <div class="fg"><label>Prix revente CCC 10 (€)</label><input type="number" id="c-p10" step="0.01" value="0"></div>
+        <div class="fg"><label>Prix revente CCC 9 (€)</label><input type="number" id="c-p9" step="0.01" value="0"></div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:18px;justify-content:center" onclick="ajouterCarte()">Ajouter la carte</button>
+      <button class="btn btn-cyan" style="width:100%;margin-top:10px;justify-content:center" onclick="actualiserPrixAPI()">Actualiser les prix (API)</button>
     </div>
     <div class="card">
-      <div class="sec-title">💡 Comment ça marche</div>
+      <div class="sec-title">Comment ça marche</div>
       <p style="color:var(--dim);font-size:13.5px;line-height:1.8">
-        <strong style="color:#fff">EV (Espérance de gain)</strong> = P10 × Marge(10) + P9 × Marge(9)<br><br>
-        <strong style="color:#fff">Seuil P10</strong> = probabilité minimale d'obtenir un 10 pour être rentable<br><br>
-        <strong style="color:var(--pink)">Règle d'or :</strong> ne grade que si la marge en CCC 9 est positive OU si ta P10 dépasse le seuil calculé<br><br>
-        <strong style="color:#fff">Frais plateforme :</strong> 12,3 % appliqués par défaut
+        <strong style="color:#fff">EV</strong> = P10 × Marge(10) + P9 × Marge(9).<br><br>
+        <strong style="color:#fff">Actualiser les prix (API)</strong> : Utilise l'API gratuite TCGdex pour estimer les prix du marché. Cela mettra à jour les prix "CCC 10" et "CCC 9" automatiquement.
       </p>
     </div>
   </div>
-  <div class="card"><div class="sec-title">📋 Cartes analysées</div><div class="tbl-wrap"><table><thead><tr>
-    <th>Nom</th><th>Coût</th><th>Net 10</th><th>Net 9</th><th>P10</th><th>EV</th><th>Seuil</th><th>Décision</th><th></th>
-  </tr></thead><tbody id="tb-cartes"></tbody></table></div></div>
+  <div class="card">
+    <div class="sec-title">Cartes analysées</div>
+    <input type="text" class="search-bar" id="search-cartes" placeholder="Rechercher une carte..." oninput="renderCartes()">
+    <div class="tbl-wrap"><table><thead><tr>
+      <th>Nom</th><th>Coût</th><th>Net 10</th><th>Net 9</th><th>P10</th><th>EV</th><th>Décision</th><th></th>
+    </tr></thead><tbody id="tb-cartes"></tbody></table></div>
+  </div>
 </div>
 
 <div class="tab-content" id="tab-ventes">
   <div class="card" style="margin-bottom:16px">
-    <div class="sec-title">💸 Enregistrer une vente</div>
+    <div class="sec-title">Enregistrer une vente</div>
     <div class="fgrid fgrid3">
       <div class="fg"><label>Carte vendue</label><select id="v-carte"></select></div>
       <div class="fg"><label>Date</label><input type="date" id="v-date"></div>
       <div class="fg"><label>Prix brut (€)</label><input type="number" id="v-prix" step="0.01" value="0"></div>
       <div class="fg"><label>Frais plateforme (€)</label><input type="number" id="v-frais" step="0.01" value="0"></div>
-      <div class="fg"><label>Note obtenue</label><select id="v-note"><option>10</option><option>9</option><option>8</option><option>7</option><option>Raw</option></select></div>
-      <div class="fg"><label>Plateforme</label><select id="v-plateforme"><option>Vinted</option><option>eBay</option><option>Cardmarket</option><option>Voggt</option><option>Leboncoin</option><option>Autre</option></select></div>
+      <div class="fg"><label>Note obtenue</label><select id="v-note"><option>10</option><option>9</option><option>8</option><option>Raw</option></select></div>
+      <div class="fg"><label>Plateforme</label><select id="v-plateforme"><option>Vinted</option><option>eBay</option><option>Cardmarket</option><option>Voggt</option></select></div>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;justify-content:center" onclick="ajouterVente()">Enregistrer la vente</button>
   </div>
@@ -192,29 +203,29 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="card kpi green"><div class="kpi-label">Marge réelle</div><div class="kpi-value" id="v-marge">0 €</div></div>
     <div class="card kpi"><div class="kpi-label">Ventes</div><div class="kpi-value" id="v-nb">0</div></div>
   </div>
-  <div class="card"><div class="sec-title">📜 Historique</div><div class="tbl-wrap"><table><thead><tr>
+  <div class="card"><div class="sec-title">Historique</div><div class="tbl-wrap"><table><thead><tr>
     <th>Date</th><th>Carte</th><th>Plateforme</th><th>Note</th><th>Brut</th><th>Frais</th><th>Net</th><th>Marge</th><th></th>
   </tr></thead><tbody id="tb-ventes"></tbody></table></div></div>
 </div>
 
 <div class="tab-content" id="tab-mensuel">
-  <div class="card" style="margin-bottom:16px"><div class="sec-title">📅 Activité mensuelle</div><div class="chart-wrap" style="height:340px"><canvas id="ch-mensuel"></canvas></div></div>
-  <div class="card"><div class="sec-title">📊 Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
+  <div class="card" style="margin-bottom:16px"><div class="sec-title">Activité mensuelle</div><div class="chart-wrap" style="height:340px"><canvas id="ch-mensuel"></canvas></div></div>
+  <div class="card"><div class="sec-title">Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
     <th>Mois</th><th>Achats</th><th>Investi</th><th>Ventes</th><th>CA net</th><th>Marge</th>
   </tr></thead><tbody id="tb-mensuel"></tbody></table></div></div>
 </div>
 
 <div class="tab-content" id="tab-objectifs">
   <div class="card" style="margin-bottom:16px">
-    <div class="sec-title">⚙️ Définir mes objectifs annuels</div>
+    <div class="sec-title">Définir mes objectifs annuels</div>
     <div class="fgrid fgrid3">
-      <div class="fg"><label>CA net annuel cible (€)</label><input type="number" id="o-ca" step="100" value="5000"></div>
-      <div class="fg"><label>Marge annuelle cible (€)</label><input type="number" id="o-marge" step="100" value="2000"></div>
+      <div class="fg"><label>CA net cible (€)</label><input type="number" id="o-ca" step="100" value="5000"></div>
+      <div class="fg"><label>Marge cible (€)</label><input type="number" id="o-marge" step="100" value="2000"></div>
       <div class="fg"><label>Nb de cartes à acheter</label><input type="number" id="o-cartes" step="10" value="150"></div>
     </div>
-    <button class="btn btn-cyan" style="width:100%;margin-top:18px;justify-content:center" onclick="saveObjectifs()">💾 Enregistrer les objectifs</button>
+    <button class="btn btn-cyan" style="width:100%;margin-top:18px;justify-content:center" onclick="saveObjectifs()">Enregistrer les objectifs</button>
   </div>
-  <div class="card"><div class="sec-title">🎯 Progression</div><div id="obj-progress"></div></div>
+  <div class="card"><div class="sec-title">Progression</div><div id="obj-progress"></div></div>
 </div>
 
 <div class="tab-content" id="tab-stock">
@@ -223,56 +234,107 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="card kpi cyan"><div class="kpi-label">Cartes vendues</div><div class="kpi-value" id="s-vendues">0</div></div>
     <div class="card kpi green"><div class="kpi-label">Valeur du stock</div><div class="kpi-value" id="s-valeur">0 €</div></div>
   </div>
-  <div class="card" style="margin-bottom:16px"><div class="sec-title">📈 Évolution du stock</div><div class="chart-wrap" style="height:320px"><canvas id="ch-stock"></canvas></div></div>
-  <div class="card"><div class="sec-title">🗂️ Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
+  <div class="card" style="margin-bottom:16px"><div class="sec-title">Évolution du stock</div><div class="chart-wrap" style="height:320px"><canvas id="ch-stock"></canvas></div></div>
+  <div class="card"><div class="sec-title">Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
     <th>Mois</th><th>Achats</th><th>Ventes</th><th>Stock fin de mois</th><th>Valeur stock</th>
   </tr></thead><tbody id="tb-stock"></tbody></table></div></div>
 </div>
 
 <div class="tab-content" id="tab-collection">
   <div class="card" style="margin-bottom:16px">
-    <div class="sec-title">🎴 Ajouter une carte à ma collection perso</div>
+    <div class="sec-title">Ajouter à ma collection perso</div>
     <div class="fgrid fgrid3">
       <div class="fg"><label>Nom</label><input type="text" id="p-nom" placeholder="Ex: Dracaufeu Base Set"></div>
-      <div class="fg"><label>Set / Édition</label><input type="text" id="p-set" placeholder="Ex: Base Set 1999"></div>
-      <div class="fg"><label>Langue</label><select id="p-langue"><option>FR</option><option>JAP</option><option>EN</option><option>DE</option><option>IT</option></select></div>
-      <div class="fg"><label>Année</label><input type="number" id="p-annee" placeholder="1999"></div>
-      <div class="fg"><label>État</label><select id="p-etat"><option>Mint</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option></select></div>
-      <div class="fg"><label>Valeur estimée (€)</label><input type="number" id="p-valeur" step="0.01" value="0"></div>
+      <div class="fg"><label>Set / Édition</label><input type="text" id="p-set" placeholder="Ex: Base Set"></div>
+      <div class="fg"><label>Langue</label><select id="p-langue"><option>FR</option><option>JAP</option><option>EN</option></select></div>
+      <div class="fg"><label>Année</label><input type="number" id="p-annee"></div>
+      <div class="fg"><label>État</label><select id="p-etat"><option>Mint</option><option>Near Mint</option><option>Excellent</option><option>Good</option></select></div>
+      <div class="fg"><label>Valeur unitaire (€)</label><input type="number" id="p-valeur" step="0.01" value="0"></div>
       <div class="fg"><label>Quantité</label><input type="number" id="p-qte" value="1" min="1"></div>
-      <div class="fg full"><label>Note / Commentaire</label><input type="text" id="p-note" placeholder="Ex: Signature, carte gradée PSA 10..."></div>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;justify-content:center" onclick="ajouterCollection()">Ajouter à ma collection</button>
   </div>
   <div class="grid g3" style="margin-bottom:16px">
-    <div class="card kpi purple"><div class="kpi-label">Valeur totale collection</div><div class="kpi-value" id="p-total">0 €</div></div>
+    <div class="card kpi purple"><div class="kpi-label">Valeur totale</div><div class="kpi-value" id="p-total">0 €</div></div>
     <div class="card kpi cyan"><div class="kpi-label">Cartes uniques</div><div class="kpi-value" id="p-uniques">0</div></div>
     <div class="card kpi green"><div class="kpi-label">Total cartes</div><div class="kpi-value" id="p-nb">0</div></div>
   </div>
-  <div class="card"><div class="sec-title">📚 Ma collection</div><div class="tbl-wrap"><table><thead><tr>
-    <th>Nom</th><th>Set</th><th>Langue</th><th>Année</th><th>État</th><th>Qté</th><th>Valeur unitaire</th><th>Valeur totale</th><th></th>
-  </tr></thead><tbody id="tb-collection"></tbody></table></div></div>
+  <div class="card">
+    <div class="sec-title">Ma collection</div>
+    <input type="text" class="search-bar" id="search-collection" placeholder="Rechercher..." oninput="renderCollection()">
+    <div class="tbl-wrap"><table><thead><tr>
+      <th>Nom</th><th>Set</th><th>Langue</th><th>Année</th><th>État</th><th>Qté</th><th>Valeur</th><th></th>
+    </tr></thead><tbody id="tb-collection"></tbody></table></div>
+  </div>
 </div>
 
+<div class="tab-content" id="tab-scelles">
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec-title">Ajouter un produit scellé</div>
+    <div class="fgrid fgrid3">
+      <div class="fg"><label>Nom du produit</label><input type="text" id="sc-nom" placeholder="Ex: Display Écarlate"></div>
+      <div class="fg"><label>Type</label><select id="sc-type"><option>Display</option><option>Coffret</option><option>ETB</option><option>Tin</option></select></div>
+      <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="sc-achat" step="0.01" value="0"></div>
+      <div class="fg"><label>Quantité</label><input type="number" id="sc-qte" value="1" min="1"></div>
+      <div class="fg"><label>Valeur actuelle (€)</label><input type="number" id="sc-valeur" step="0.01" value="0"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:18px;justify-content:center" onclick="ajouterScelle()">Ajouter au stock scellé</button>
+  </div>
+
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card kpi purple"><div class="kpi-label">Valeur totale scellés</div><div class="kpi-value" id="sc-total-valeur">0 €</div></div>
+    <div class="card kpi cyan"><div class="kpi-label">Produits en stock</div><div class="kpi-value" id="sc-nb-produits">0</div></div>
+    <div class="card kpi green"><div class="kpi-label">Marge latente</div><div class="kpi-value" id="sc-marge-latente">0 €</div></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Mon stock scellé</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Type</th><th>Qté</th><th>Prix achat</th><th>Valeur actuelle</th><th>Marge</th><th></th></tr></thead>
+        <tbody id="tb-scelles"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+</div> <!-- Fin .app -->
+
+<div class="modal-overlay" id="modal-parametres">
+  <div class="modal-content">
+    <h2 class="sec-title" style="margin-bottom:20px">Paramètres</h2>
+    <div class="fg" style="margin-bottom:20px">
+      <label>Taux de frais plateforme (%)</label>
+      <input type="number" id="param-taux" step="0.1" value="12.3">
+      <p style="font-size:12px;color:var(--dim);margin-top:5px;">Appliqué lors du calcul des marges (Vinted ~12%, eBay ~15%).</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveParametres()">Enregistrer</button>
+      <button class="btn" style="flex:1;justify-content:center" onclick="fermerParametres()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
 <script>
 /* ============================================================
-   POKÉMARGES PRO — PARTIE 2/3 : LOGIQUE
+   POKÉMARGES PRO V3 — PARTIE 2/3 : LOGIQUE & CLOUD
    ============================================================ */
-
-const TAUX_FRAIS = 0.123;
 
 let state = {
   cartes: [],
   ventes: [],
   collection: [],
-  objectifs: { ca: 5000, marge: 2000, cartes: 150 }
+  scelles: [],
+  objectifs: { ca: 5000, marge: 2000, cartes: 150 },
+  parametres: { tauxFrais: 12.3 }
 };
 
 /* ---------- DEXIE CLOUD ---------- */
 const db = new Dexie('PokemargesDB', { addons: [DexieCloud.dexieCloud] });
-db.version(1).stores({
-  appState: 'id'
+db.version(2).stores({
+  appState: 'id',
+  sealed: 'id, nom, type, updatedAt'
 });
 
 db.cloud.configure({
@@ -294,6 +356,7 @@ async function cloudLoad() {
       state.ventes = row.data.ventes || [];
       state.collection = row.data.collection || [];
       state.objectifs = row.data.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
+      state.parametres = row.data.parametres || { tauxFrais: 12.3 };
       return true;
     }
   } catch (e) { console.warn('Cloud load error:', e); }
@@ -306,19 +369,19 @@ function updateAuthButton() {
   try {
     const user = db.cloud.currentUser.value;
     if (user && user.isLoggedIn) {
-      btn.innerHTML = '👤 ' + (user.email || user.userId || 'Connecté');
+      btn.innerHTML = 'Connecté : ' + (user.email ? user.email.split('@')[0] : 'Utilisateur');
+      btn.style.borderColor = 'var(--green)';
       btn.onclick = () => {
         if (confirm('Se déconnecter ? Tes données restent dans le cloud.')) {
           db.cloud.logout();
         }
       };
     } else {
-      btn.innerHTML = '🔐 Se connecter';
+      btn.innerHTML = 'Se connecter';
+      btn.style.borderColor = 'var(--border)';
       btn.onclick = () => db.cloud.login();
     }
-  } catch (e) {
-    console.warn('Auth button error:', e);
-  }
+  } catch (e) { console.warn('Auth button error:', e); }
 }
 
 db.cloud.currentUser.subscribe(async (user) => {
@@ -331,13 +394,13 @@ db.cloud.currentUser.subscribe(async (user) => {
 
 /* ---------- PERSISTANCE LOCALE ---------- */
 function save() {
-  try { localStorage.setItem('pokemarges_v3', JSON.stringify(state)); }
+  try { localStorage.setItem('pokemarges_v4', JSON.stringify(state)); }
   catch(e) { console.warn('Save error', e); }
   cloudSave();
 }
 
 function load() {
-  const raw = localStorage.getItem('pokemarges_v3');
+  const raw = localStorage.getItem('pokemarges_v4');
   if (!raw) return;
   try {
     const p = JSON.parse(raw);
@@ -345,17 +408,32 @@ function load() {
     state.ventes = p.ventes || [];
     state.collection = p.collection || [];
     state.objectifs = p.objectifs || { ca: 5000, marge: 2000, cartes: 150 };
+    state.parametres = p.parametres || { tauxFrais: 12.3 };
   } catch(e) { console.warn('Load error', e); }
 }
 
-/* ---------- FORMATAGE ---------- */
+/* ---------- UTILITAIRES & TOASTS ---------- */
 function fmt(n) { n = +n || 0; return n.toFixed(2).replace('.', ',') + ' €'; }
 function fmtP(n) { n = +n || 0; return n.toFixed(1).replace('.', ',') + ' %'; }
 function fmtInt(n) { return Math.round(+n || 0).toString(); }
 
+function showToast(message, isError = false) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' error' : '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 /* ---------- CALCULS ---------- */
+function getTauxFrais() { return (state.parametres.tauxFrais || 12.3) / 100; }
 function coutRevient(c) { return (+c.achat || 0) + (+c.port || 0) + (+c.grad || 0); }
-function netCCC(c, prixRevente) { return prixRevente * (1 - TAUX_FRAIS) - coutRevient(c); }
+function netCCC(c, prixRevente) { return prixRevente * (1 - getTauxFrais()) - coutRevient(c); }
 function calcEV(c) {
   const p10 = (+c.prob || 0) / 100;
   return p10 * netCCC(c, +c.p10 || 0) + (1 - p10) * netCCC(c, +c.p9 || 0);
@@ -373,6 +451,24 @@ function roiCarte(c) {
   return (calcEV(c) / cout) * 100;
 }
 
+/* ---------- PARAMÈTRES ---------- */
+function ouvrirParametres() {
+  document.getElementById('param-taux').value = state.parametres.tauxFrais;
+  document.getElementById('modal-parametres').classList.add('active');
+}
+
+function fermerParametres() {
+  document.getElementById('modal-parametres').classList.remove('active');
+}
+
+function saveParametres() {
+  state.parametres.tauxFrais = +document.getElementById('param-taux').value || 12.3;
+  save();
+  fermerParametres();
+  showToast('Paramètres enregistrés.');
+  renderAll();
+}
+
 /* ---------- NAVIGATION ---------- */
 function initTabs() {
   document.querySelectorAll('.tab').forEach(t => {
@@ -387,12 +483,13 @@ function initTabs() {
   });
 }
 
-/* ---------- CARTES ---------- */
+/* ---------- GESTION CARTES ---------- */
 function ajouterCarte() {
   const nom = document.getElementById('c-nom').value.trim();
-  if (!nom) { alert('Donne un nom à la carte'); return; }
+  if (!nom) { showToast('Donne un nom à la carte.', true); return; }
+  
   state.cartes.push({
-    id: Date.now() + Math.random(),
+    id: Date.now() + Math.random().toString(),
     nom,
     langue: document.getElementById('c-langue').value,
     plateforme: document.getElementById('c-plateforme').value,
@@ -404,9 +501,11 @@ function ajouterCarte() {
     p9: +document.getElementById('c-p9').value || 0,
     date: new Date().toISOString().slice(0, 10)
   });
+  
   document.getElementById('c-nom').value = '';
   save();
   renderAll();
+  showToast('Carte ajoutée avec succès.');
 }
 
 function supprimerCarte(id) {
@@ -414,16 +513,48 @@ function supprimerCarte(id) {
   state.cartes = state.cartes.filter(c => String(c.id) !== String(id));
   save();
   renderAll();
+  showToast('Carte supprimée.');
 }
 
-/* ---------- VENTES ---------- */
+function renderCartes() {
+  const tb = document.getElementById('tb-cartes');
+  if (!tb) return;
+  
+  const search = (document.getElementById('search-cartes')?.value || '').toLowerCase();
+  const filtered = state.cartes.filter(c => c.nom.toLowerCase().includes(search));
+
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="8" class="empty">Aucune carte trouvée.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = filtered.map(c => {
+    const ev = calcEV(c);
+    const n10 = netCCC(c, +c.p10 || 0);
+    const n9 = netCCC(c, +c.p9 || 0);
+    const dec = ev > 0 ? '<span class="badge b-ok">OK</span>' : '<span class="badge b-no">NON</span>';
+    return `<tr>
+      <td><strong>${c.nom}</strong> <span style="color:var(--dim);font-size:11.5px">${c.langue || ''}</span></td>
+      <td>${fmt(coutRevient(c))}</td>
+      <td style="color:${n10 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n10)}</td>
+      <td style="color:${n9 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n9)}</td>
+      <td>${c.prob}%</td>
+      <td style="color:${ev >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(ev)}</td>
+      <td>${dec}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="supprimerCarte('${c.id}')">X</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- GESTION VENTES ---------- */
 function ajouterVente() {
   const carteId = document.getElementById('v-carte').value;
-  if (!carteId) { alert("Ajoute d'abord une carte"); return; }
+  if (!carteId) { showToast('Sélectionne une carte.', true); return; }
   const carte = state.cartes.find(c => String(c.id) === String(carteId));
-  if (!carte) { alert('Carte introuvable'); return; }
+  if (!carte) return;
+
   state.ventes.push({
-    id: Date.now() + Math.random(),
+    id: Date.now() + Math.random().toString(),
     carteId: carte.id,
     nom: carte.nom,
     cout: coutRevient(carte),
@@ -433,8 +564,10 @@ function ajouterVente() {
     note: document.getElementById('v-note').value,
     plateforme: document.getElementById('v-plateforme').value
   });
+
   save();
   renderAll();
+  showToast('Vente enregistrée.');
 }
 
 function supprimerVente(id) {
@@ -442,44 +575,14 @@ function supprimerVente(id) {
   state.ventes = state.ventes.filter(v => String(v.id) !== String(id));
   save();
   renderAll();
+  showToast('Vente supprimée.');
 }
 
-/* ---------- RENDER CARTES ---------- */
-function renderCartes() {
-  const tb = document.getElementById('tb-cartes');
-  if (!tb) return;
-  if (!state.cartes.length) {
-    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-ico">🃏</div>Aucune carte. Ajoute ta première carte ci-dessus.</td></tr>';
-    return;
-  }
-  tb.innerHTML = state.cartes.map(c => {
-    const ev = calcEV(c);
-    const s = seuilP10(c);
-    const n10 = netCCC(c, +c.p10 || 0);
-    const n9 = netCCC(c, +c.p9 || 0);
-    const dec = ev > 0
-      ? '<span class="badge b-ok">✅ OK</span>'
-      : '<span class="badge b-no">❌ NON</span>';
-    return `<tr>
-      <td><strong>${c.nom}</strong> <span style="color:var(--dim);font-size:11.5px">${c.langue || ''}</span></td>
-      <td>${fmt(coutRevient(c))}</td>
-      <td style="color:${n10 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n10)}</td>
-      <td style="color:${n9 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n9)}</td>
-      <td>${c.prob}%</td>
-      <td style="color:${ev >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(ev)}</td>
-      <td>${s}%</td>
-      <td>${dec}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="supprimerCarte('${c.id}')">✕</button></td>
-    </tr>`;
-  }).join('');
-}
-
-/* ---------- RENDER VENTES ---------- */
 function renderVentes() {
   const sel = document.getElementById('v-carte');
   if (sel) {
     const current = sel.value;
-    sel.innerHTML = '<option value="">— Choisir une carte —</option>' +
+    sel.innerHTML = '<option value="">Sélectionner une carte</option>' +
       state.cartes.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
     if (current) sel.value = current;
   }
@@ -488,7 +591,7 @@ function renderVentes() {
   if (!tb) return;
 
   if (!state.ventes.length) {
-    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-ico">💰</div>Aucune vente enregistrée.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="9" class="empty">Aucune vente.</td></tr>';
   } else {
     tb.innerHTML = state.ventes.slice().reverse().map(v => {
       const net = v.prix - v.frais;
@@ -503,22 +606,19 @@ function renderVentes() {
         <td>${fmt(v.frais)}</td>
         <td>${fmt(net)}</td>
         <td style="color:${marge >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(marge)}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="supprimerVente('${v.id}')">✕</button></td>
+        <td><button class="btn btn-sm btn-danger" onclick="supprimerVente('${v.id}')">X</button></td>
       </tr>`;
     }).join('');
   }
 
   const ca = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
   const marge = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
-  const elCa = document.getElementById('v-ca');
-  const elMarge = document.getElementById('v-marge');
-  const elNb = document.getElementById('v-nb');
-  if (elCa) elCa.textContent = fmt(ca);
-  if (elMarge) {
-    elMarge.textContent = fmt(marge);
-    elMarge.className = 'kpi-value ' + (marge >= 0 ? 'pos' : 'neg');
+  if (document.getElementById('v-ca')) document.getElementById('v-ca').textContent = fmt(ca);
+  if (document.getElementById('v-marge')) {
+    document.getElementById('v-marge').textContent = fmt(marge);
+    document.getElementById('v-marge').className = 'kpi-value ' + (marge >= 0 ? 'pos' : 'neg');
   }
-  if (elNb) elNb.textContent = state.ventes.length;
+  if (document.getElementById('v-nb')) document.getElementById('v-nb').textContent = state.ventes.length;
 }
 
 /* ---------- OBJECTIFS ---------- */
@@ -531,6 +631,7 @@ function saveObjectifs() {
   save();
   renderObjectifs();
   renderDashboard();
+  showToast('Objectifs enregistrés.');
 }
 
 function renderObjectifs() {
@@ -544,25 +645,23 @@ function renderObjectifs() {
     return `<div class="obj-row">
       <div class="obj-head">
         <div class="obj-name">${nom}</div>
-        <div class="obj-stats"><strong>${cls === 'int' ? fmtInt(actuel) : fmt(actuel)}</strong> / ${cls === 'int' ? fmtInt(cible) : fmt(cible)} · ${pct.toFixed(0)}%</div>
+        <div class="obj-stats"><strong>${cls === 'int' ? fmtInt(actuel) : fmt(actuel)}</strong> / ${cls === 'int' ? fmtInt(cible) : fmt(cible)} (${pct.toFixed(0)}%)</div>
       </div>
       <div class="prog"><div class="prog-fill ${cls === 'int' ? 'cyan' : cls === 'marge' ? 'green' : ''}" style="width:${pct}%"></div></div>
     </div>`;
   };
 
   const el = document.getElementById('obj-progress');
-  if (!el) return;
-  el.innerHTML =
-    ligne("💰 Chiffre d'affaires net", caActuel, o.ca, '') +
-    ligne('📈 Marge nette', margeActuelle, o.marge, 'marge') +
-    ligne('🃏 Cartes achetées', cartesAchetees, o.cartes, 'int');
+  if (el) {
+    el.innerHTML =
+      ligne("Chiffre d'affaires", caActuel, o.ca, '') +
+      ligne('Marge nette', margeActuelle, o.marge, 'marge') +
+      ligne('Cartes achetées', cartesAchetees, o.cartes, 'int');
+  }
 
-  const elCa = document.getElementById('o-ca');
-  const elMarge = document.getElementById('o-marge');
-  const elCartes = document.getElementById('o-cartes');
-  if (elCa) elCa.value = o.ca;
-  if (elMarge) elMarge.value = o.marge;
-  if (elCartes) elCartes.value = o.cartes;
+  if (document.getElementById('o-ca')) document.getElementById('o-ca').value = o.ca;
+  if (document.getElementById('o-marge')) document.getElementById('o-marge').value = o.marge;
+  if (document.getElementById('o-cartes')) document.getElementById('o-cartes').value = o.cartes;
 }
 
 /* ---------- STOCK ---------- */
@@ -584,18 +683,11 @@ function calculerStock() {
   });
 
   const cles = Object.keys(mois).sort();
-  let stockCumule = 0;
-  let valeurCumulee = 0;
+  let stockCumule = 0, valeurCumulee = 0;
   return cles.map(m => {
     stockCumule += mois[m].achats - mois[m].ventes;
     valeurCumulee += mois[m].investi;
-    return {
-      mois: m,
-      achats: mois[m].achats,
-      ventes: mois[m].ventes,
-      stock: Math.max(0, stockCumule),
-      valeur: Math.max(0, valeurCumulee)
-    };
+    return { mois: m, achats: mois[m].achats, ventes: mois[m].ventes, stock: Math.max(0, stockCumule), valeur: Math.max(0, valeurCumulee) };
   });
 }
 
@@ -604,94 +696,146 @@ function renderStock() {
   const totalAchats = state.cartes.length;
   const totalVentes = state.ventes.length;
   const stockActuel = totalAchats - totalVentes;
-  const valeurStock = state.cartes
-    .filter(c => !state.ventes.some(v => String(v.carteId) === String(c.id)))
-    .reduce((s, c) => s + coutRevient(c), 0);
+  const valeurStock = state.cartes.filter(c => !state.ventes.some(v => String(v.carteId) === String(c.id))).reduce((s, c) => s + coutRevient(c), 0);
 
-  const elStock = document.getElementById('s-stock');
-  const elVendues = document.getElementById('s-vendues');
-  const elValeur = document.getElementById('s-valeur');
-  if (elStock) elStock.textContent = stockActuel;
-  if (elVendues) elVendues.textContent = totalVentes;
-  if (elValeur) elValeur.textContent = fmt(valeurStock);
+  if (document.getElementById('s-stock')) document.getElementById('s-stock').textContent = stockActuel;
+  if (document.getElementById('s-vendues')) document.getElementById('s-vendues').textContent = totalVentes;
+  if (document.getElementById('s-valeur')) document.getElementById('s-valeur').textContent = fmt(valeurStock);
 
   const tb = document.getElementById('tb-stock');
-  if (!tb) return;
-  if (!data.length) {
-    tb.innerHTML = '<tr><td colspan="5" class="empty"><div class="empty-ico">📈</div>Pas encore de données.</td></tr>';
-    return;
+  if (tb) {
+    if (!data.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="empty">Aucune donnée.</td></tr>';
+    } else {
+      tb.innerHTML = data.map(d => `<tr>
+        <td><strong>${d.mois}</strong></td><td>${d.achats}</td><td>${d.ventes}</td><td>${d.stock}</td><td>${fmt(d.valeur)}</td>
+      </tr>`).join('');
+    }
   }
-  tb.innerHTML = data.map(d => `<tr>
-    <td><strong>${d.mois}</strong></td>
-    <td>${d.achats}</td>
-    <td>${d.ventes}</td>
-    <td>${d.stock}</td>
-    <td>${fmt(d.valeur)}</td>
-  </tr>`).join('');
 }
 
 /* ---------- COLLECTION ---------- */
 function ajouterCollection() {
   const nom = document.getElementById('p-nom').value.trim();
-  if (!nom) { alert('Donne un nom à la carte'); return; }
+  if (!nom) { showToast('Donne un nom à la carte.', true); return; }
+  
   state.collection.push({
-    id: Date.now() + Math.random(),
+    id: Date.now() + Math.random().toString(),
     nom,
     set: document.getElementById('p-set').value.trim(),
     langue: document.getElementById('p-langue').value,
     annee: +document.getElementById('p-annee').value || 0,
     etat: document.getElementById('p-etat').value,
     valeur: +document.getElementById('p-valeur').value || 0,
-    qte: +document.getElementById('p-qte').value || 1,
-    note: document.getElementById('p-note').value.trim()
+    qte: +document.getElementById('p-qte').value || 1
   });
+
   document.getElementById('p-nom').value = '';
-  document.getElementById('p-set').value = '';
-  document.getElementById('p-note').value = '';
   save();
   renderAll();
+  showToast('Carte ajoutée à la collection.');
 }
 
 function supprimerCollection(id) {
-  if (!confirm('Retirer cette carte de ta collection ?')) return;
+  if (!confirm('Supprimer cette carte ?')) return;
   state.collection = state.collection.filter(c => String(c.id) !== String(id));
   save();
   renderAll();
+  showToast('Carte retirée.');
 }
 
 function renderCollection() {
   const tb = document.getElementById('tb-collection');
   if (!tb) return;
+  
+  const search = (document.getElementById('search-collection')?.value || '').toLowerCase();
+  const filtered = state.collection.filter(c => c.nom.toLowerCase().includes(search));
 
-  const totalValeur = state.collection.reduce((s, c) => s + (c.valeur * c.qte), 0);
-  const uniques = state.collection.length;
-  const total = state.collection.reduce((s, c) => s + c.qte, 0);
+  const totalValeur = filtered.reduce((s, c) => s + (c.valeur * c.qte), 0);
+  if (document.getElementById('p-total')) document.getElementById('p-total').textContent = fmt(totalValeur);
+  if (document.getElementById('p-uniques')) document.getElementById('p-uniques').textContent = filtered.length;
+  if (document.getElementById('p-nb')) document.getElementById('p-nb').textContent = filtered.reduce((s, c) => s + c.qte, 0);
 
-  const elTotal = document.getElementById('p-total');
-  const elUniq = document.getElementById('p-uniques');
-  const elNb = document.getElementById('p-nb');
-  if (elTotal) elTotal.textContent = fmt(totalValeur);
-  if (elUniq) elUniq.textContent = uniques;
-  if (elNb) elNb.textContent = total;
-
-  if (!state.collection.length) {
-    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-ico">🎴</div>Aucune carte dans ta collection perso.</td></tr>';
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="8" class="empty">Aucune carte dans la collection.</td></tr>';
     return;
   }
-  tb.innerHTML = state.collection.map(c => `<tr>
-    <td><strong>${c.nom}</strong>${c.note ? `<br><span style="color:var(--dim);font-size:11px">${c.note}</span>` : ''}</td>
-    <td>${c.set || '—'}</td>
+  tb.innerHTML = filtered.map(c => `<tr>
+    <td><strong>${c.nom}</strong></td>
+    <td>${c.set || '-'}</td>
     <td>${c.langue}</td>
-    <td>${c.annee || '—'}</td>
+    <td>${c.annee || '-'}</td>
     <td><span class="badge b-cyan">${c.etat}</span></td>
     <td>${c.qte}</td>
     <td>${fmt(c.valeur)}</td>
-    <td style="color:var(--green);font-weight:700">${fmt(c.valeur * c.qte)}</td>
-    <td><button class="btn btn-sm btn-danger" onclick="supprimerCollection('${c.id}')">✕</button></td>
+    <td><button class="btn btn-sm btn-danger" onclick="supprimerCollection('${c.id}')">X</button></td>
   </tr>`).join('');
 }
 
-/* ---------- EXPORT / RESET ---------- */
+/* ---------- SCELLÉS ---------- */
+function ajouterScelle() {
+  const nom = document.getElementById('sc-nom').value.trim();
+  if (!nom) { showToast('Donne un nom au produit.', true); return; }
+
+  state.scelles.push({
+    id: Date.now() + Math.random().toString(),
+    nom,
+    type: document.getElementById('sc-type').value,
+    achat: +document.getElementById('sc-achat').value || 0,
+    qte: +document.getElementById('sc-qte').value || 1,
+    valeur: +document.getElementById('sc-valeur').value || 0,
+    date: new Date().toISOString().slice(0, 10)
+  });
+
+  document.getElementById('sc-nom').value = '';
+  save();
+  renderAll();
+  showToast('Produit scellé ajouté.');
+}
+
+function supprimerScelle(id) {
+  if (!confirm('Supprimer ce produit ?')) return;
+  state.scelles = state.scelles.filter(s => String(s.id) !== String(id));
+  save();
+  renderAll();
+  showToast('Produit scellé supprimé.');
+}
+
+function renderScelles() {
+  const tb = document.getElementById('tb-scelles');
+  if (!tb) return;
+
+  const totalValeur = state.scelles.reduce((s, i) => s + (i.valeur * i.qte), 0);
+  const totalMarge = state.scelles.reduce((s, i) => s + ((i.valeur - i.achat) * i.qte), 0);
+  const totalQte = state.scelles.reduce((s, i) => s + i.qte, 0);
+
+  if (document.getElementById('sc-total-valeur')) document.getElementById('sc-total-valeur').textContent = fmt(totalValeur);
+  if (document.getElementById('sc-nb-produits')) document.getElementById('sc-nb-produits').textContent = totalQte;
+  if (document.getElementById('sc-marge-latente')) {
+    document.getElementById('sc-marge-latente').textContent = fmt(totalMarge);
+    document.getElementById('sc-marge-latente').className = 'kpi-value ' + (totalMarge >= 0 ? 'pos' : 'neg');
+  }
+
+  if (!state.scelles.length) {
+    tb.innerHTML = '<tr><td colspan="7" class="empty">Aucun produit scellé.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = state.scelles.map(item => {
+    const marge = (item.valeur - item.achat) * item.qte;
+    return `<tr>
+      <td><strong>${item.nom}</strong></td>
+      <td>${item.type}</td>
+      <td>${item.qte}</td>
+      <td>${fmt(item.achat)}</td>
+      <td style="color:var(--cyan)">${fmt(item.valeur)}</td>
+      <td style="color:${marge >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(marge)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="supprimerScelle('${item.id}')">X</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- EXPORT ---------- */
 function exporter() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -700,19 +844,57 @@ function exporter() {
   a.download = 'pokemarges_export_' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
+  showToast('Données exportées.');
 }
 
-function resetAll() {
-  if (!confirm('⚠️ ATTENTION : cela va effacer TOUTES tes données. Continuer ?')) return;
-  if (!confirm('Vraiment sûr ? Cette action est irréversible.')) return;
-  state = { cartes: [], ventes: [], collection: [], objectifs: { ca: 5000, marge: 2000, cartes: 150 } };
-  save();
-  location.reload();
+/* ---------- API TEMPS RÉEL (TCGdex) ---------- */
+async function actualiserPrixAPI() {
+  if (!state.cartes.length) { showToast('Aucune carte à actualiser.', true); return; }
+  
+  showToast('Recherche des prix en cours...');
+  let updateCount = 0;
+  
+  for (let i = 0; i < state.cartes.length; i++) {
+    const carte = state.cartes[i];
+    try {
+      // API TCGdex gratuite
+      const query = encodeURIComponent(carte.nom.split(' ')[0]);
+      const res = await fetch(`https://api.tcgdex.net/v2/fr/cards?name=${query}`);
+      const data = await res.json();
+      
+      if (data && data.length > 0) {
+        // On prend la première correspondance avec prix Cardmarket
+        const matchedCard = data.find(c => c.pricing && c.pricing.cardmarket) || data[0];
+        
+        if (matchedCard && matchedCard.pricing && matchedCard.pricing.cardmarket) {
+          const prixMarche = matchedCard.pricing.cardmarket.avg;
+          if (prixMarche > 0) {
+            // Simulation des prix gradés (ex: CCC 10 vaut 1.5x le prix raw, CCC 9 vaut le prix raw)
+            carte.p10 = Math.round(prixMarche * 1.5 * 100) / 100;
+            carte.p9 = Math.round(prixMarche * 1.0 * 100) / 100;
+            updateCount++;
+          }
+        }
+      }
+      // Pause pour respecter l'API
+      await new Promise(r => setTimeout(r, 300));
+    } catch (e) {
+      console.warn('API error for', carte.nom, e);
+    }
+  }
+
+  if (updateCount > 0) {
+    save();
+    renderAll();
+    showToast(`${updateCount} prix mis à jour via TCGdex !`);
+  } else {
+    showToast('Aucun prix trouvé sur l\\'API.', true);
+  }
 }
 </script>
 <script>
 /* ============================================================
-   POKÉMARGES PRO — PARTIE 3/3 : GRAPHIQUES + INIT
+   POKÉMARGES PRO V3 — PARTIE 3/3 : GRAPHIQUES & INITIALISATION
    ============================================================ */
 
 Chart.defaults.color = '#7a7a95';
@@ -752,7 +934,7 @@ function renderDashboard() {
   if (!el) return;
 
   if (!top.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-ico">🎯</div>Ajoute des cartes pour voir tes meilleures opportunités.</div>';
+    el.innerHTML = '<div class="empty">Ajoute des cartes pour voir tes meilleures opportunités.</div>';
     return;
   }
 
@@ -761,9 +943,7 @@ function renderDashboard() {
   </tr></thead><tbody>
   ${top.map((c, i) => {
     const s = seuilP10(c);
-    const dec = c.ev > 0
-      ? '<span class="badge b-ok">✅ OK</span>'
-      : '<span class="badge b-no">❌ NON</span>';
+    const dec = c.ev > 0 ? '<span class="badge b-ok">OK</span>' : '<span class="badge b-no">NON</span>';
     return `<tr>
       <td><strong style="color:var(--pink)">#${i + 1}</strong></td>
       <td><strong>${c.nom}</strong></td>
@@ -929,22 +1109,22 @@ function renderMensuel() {
 
   const cles = Object.keys(mois).sort();
   const tb = document.getElementById('tb-mensuel');
-  if (!tb) return;
-
-  if (!cles.length) {
-    tb.innerHTML = '<tr><td colspan="6" class="empty"><div class="empty-ico">📅</div>Pas encore de données.</td></tr>';
-  } else {
-    tb.innerHTML = cles.map(m => {
-      const d = mois[m];
-      return `<tr>
-        <td><strong>${m}</strong></td>
-        <td>${d.achats}</td>
-        <td>${fmt(d.investi)}</td>
-        <td>${d.ventes}</td>
-        <td style="color:var(--cyan)">${fmt(d.ca)}</td>
-        <td style="color:${d.marge >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(d.marge)}</td>
-      </tr>`;
-    }).join('');
+  if (tb) {
+    if (!cles.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="empty">Pas encore de données.</td></tr>';
+    } else {
+      tb.innerHTML = cles.map(m => {
+        const d = mois[m];
+        return `<tr>
+          <td><strong>${m}</strong></td>
+          <td>${d.achats}</td>
+          <td>${fmt(d.investi)}</td>
+          <td>${d.ventes}</td>
+          <td style="color:var(--cyan)">${fmt(d.ca)}</td>
+          <td style="color:${d.marge >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(d.marge)}</td>
+        </tr>`;
+      }).join('');
+    }
   }
 
   const canvas = document.getElementById('ch-mensuel');
@@ -1063,16 +1243,18 @@ function renderAll() {
   renderObjectifs();
   renderStock();
   renderCollection();
+  renderScelles();
   renderMensuel();
   renderChartTreso();
   renderChartRepartition();
   renderChartStock();
 }
 
-/* ---------- INIT ---------- */
+/* ---------- INITIALISATION ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
   load();
   initTabs();
   renderAll();
@@ -1084,7 +1266,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   updateAuthButton();
 
-  console.log('%c⚡ PokéMarges Pro + Dexie Cloud chargé', 'color:#ff2d55;font-weight:bold;font-size:14px');
+  console.log('PokéMarges Pro V3 chargé avec succès.');
 });
 </script>
 </body>
