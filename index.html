@@ -1437,5 +1437,100 @@ window.addEventListener('DOMContentLoaded', async () => {
   console.log('PokéMarges Pro V5 chargé avec succès.');
 });
 </script>
+<script>
+/* ============================================================
+   MOTEUR DE MISE À JOUR AUTOMATIQUE (PokéWallet + TCG API)
+   ============================================================ */
+
+// ⚠️ COLLE TES CLÉS API ICI (entre les guillemets)
+const POKEWALLET_API_KEY = "pk_live_cc176d412a9a57ff9fe737d5ccff47725cb190df40c34daa";
+const TCGAPI_API_KEY = "tcg_live_f8b339590137b20a7a566af1c86d1a43c1facb03";
+
+// Intervalle de mise à jour (en millisecondes) - 6 heures par défaut
+const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+// Fonction pour mettre à jour un produit via PokéWallet (Cartes)
+async function fetchPokewalletPrice(nomCarte) {
+  try {
+    const res = await fetch(`https://api.pokewallet.io/search?q=${encodeURIComponent(nomCarte)}`, {
+      headers: { 'X-API-Key': POKEWALLET_API_KEY }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.data && data.data.length > 0) {
+      const card = data.data[0]; // On prend le premier résultat
+      if (card.prices && card.prices.cardmarket) {
+        return card.prices.cardmarket.average_sell_price || card.prices.cardmarket.trend_price;
+      }
+    }
+    return null;
+  } catch (e) { console.warn("Erreur PokéWallet:", e); return null; }
+}
+
+// Fonction pour mettre à jour un produit via TCG API (Scellés)
+async function fetchTCGapiPrice(nomProduit) {
+  try {
+    const res = await fetch(`https://api.tcgapi.dev/v1/search?q=${encodeURIComponent(nomProduit)}`, {
+      headers: { 'X-API-Key': TCGAPI_API_KEY }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.data && data.data.length > 0) {
+      const product = data.data[0];
+      // On cherche le prix de marché (market price)
+      return product.prices?.market || product.prices?.low || null;
+    }
+    return null;
+  } catch (e) { console.warn("Erreur TCG API:", e); return null; }
+}
+
+// Fonction principale de mise à jour (appelée automatiquement)
+async function autoUpdatePrices() {
+  console.log("Début de la mise à jour automatique des prix...");
+  let updatedCount = 0;
+
+  // 1. Mettre à jour les cartes à l'unité
+  for (const carte of state.cartes) {
+    const newPrice = await fetchPokewalletPrice(carte.nom);
+    if (newPrice && newPrice > 0) {
+      // On estime que le prix gradé 10 vaut 1.5x le prix raw, et le 9 vaut 1x
+      carte.p10 = Math.round(newPrice * 1.5 * 100) / 100;
+      carte.p9 = Math.round(newPrice * 1.0 * 100) / 100;
+      updatedCount++;
+    }
+    // Pause de 1 seconde entre chaque requête pour respecter les quotas
+    await new Promise(r => setTimeout(r, 1000)); 
+  }
+
+  // 2. Mettre à jour les produits scellés
+  for (const scelle of state.scelles) {
+    const newPrice = await fetchTCGapiPrice(scelle.nom);
+    if (newPrice && newPrice > 0) {
+      scelle.valeur = newPrice;
+      updatedCount++;
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  // 3. Sauvegarder et rafraîchir l'écran
+  if (updatedCount > 0) {
+    save(); // Sauvegarde locale + cloud
+    renderAll(); // Rafraîchit l'interface
+    showToast(`${updatedCount} prix mis à jour automatiquement.`);
+  } else {
+    showToast("Aucun prix n'a pu être mis à jour (vérifie tes clés API).", true);
+  }
+}
+
+// Lancer la mise à jour automatique au démarrage, puis toutes les X heures
+window.addEventListener('load', () => {
+  // Attendre 5 secondes que la page soit bien chargée
+  setTimeout(() => {
+    autoUpdatePrices();
+    // Programmer les mises à jour suivantes
+    setInterval(autoUpdatePrices, UPDATE_INTERVAL_MS);
+  }, 5000);
+});
+</script>
 </body>
 </html>
