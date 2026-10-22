@@ -697,7 +697,12 @@ async function fetchTCGdexPrice(nom, numero) {
     }
     const dRes = await fetch(`https://api.tcgdex.net/v2/fr/cards/${card.id}`);
     if(!dRes.ok) return null; const dData = await dRes.json();
-    if(dData.pricing && dData.pricing.cardmarket) return dData.pricing.cardmarket.avg || dData.pricing.cardmarket.trend || null;
+    
+    if(dData.pricing && dData.pricing.cardmarket) {
+      const cm = dData.pricing.cardmarket;
+      // On privilégie 'trend' (tendance) qui est beaucoup plus stable que 'avg' (moyenne)
+      return cm.trend || cm.avg || cm.low || null;
+    }
     return null;
   } catch(e) { return null; }
 }
@@ -707,7 +712,7 @@ async function autoUpdatePrices() {
   let count = 0;
   for(let c of state.cartes) {
     const p = await fetchTCGdexPrice(c.nom, c.numero);
-    if(p && p > 0) { c.p10 = Math.round(p*1.5*100)/100; c.p9 = Math.round(p*1*100)/100; c.lastPrice = p; count++; }
+   if(p && p > 0) { c.p10 = Math.round(p*1.2*100)/100; c.p9 = Math.round(p*0.9*100)/100; c.lastPrice = p; count++; }
     await new Promise(r=>setTimeout(r, 800));
   }
   for(let w of state.wishlist) {
