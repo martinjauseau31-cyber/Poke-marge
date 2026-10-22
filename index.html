@@ -1444,32 +1444,28 @@ window.addEventListener('DOMContentLoaded', async () => {
 // Intervalle de mise à jour (6 heures par défaut)
 const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-// Fonction pour mettre à jour un produit via TCGdex
+// Fonction pour mettre à jour une carte via TCGdex
 async function fetchTCGdexPrice(nomCarte) {
   try {
-    // 1. On cherche l'ID de la carte
+    // 1. On cherche la carte par son nom
     const searchRes = await fetch(`https://api.tcgdex.net/v2/fr/cards?name=${encodeURIComponent(nomCarte)}`);
     if (!searchRes.ok) return null;
-    
     const searchData = await searchRes.json();
     if (!searchData || searchData.length === 0) return null;
     
     // On prend la première carte trouvée
     const cardId = searchData[0].id;
     
-    // 2. On récupère les détails de la carte pour avoir les prix
+    // 2. On récupère les détails pour avoir les prix
     const detailsRes = await fetch(`https://api.tcgdex.net/v2/fr/cards/${cardId}`);
     if (!detailsRes.ok) return null;
-    
     const detailsData = await detailsRes.json();
     
     // 3. On extrait le prix Cardmarket (en euros)
     if (detailsData.pricing && detailsData.pricing.cardmarket) {
       const prices = detailsData.pricing.cardmarket;
-      // On prend le prix moyen, ou à défaut le prix tendance
       return prices.avg || prices.trend || null;
     }
-    
     return null;
   } catch (e) { 
     console.warn("Erreur TCGdex:", e); 
@@ -1477,17 +1473,14 @@ async function fetchTCGdexPrice(nomCarte) {
   }
 }
 
-// Fonction principale de mise à jour automatique
+// Fonction principale de mise à jour
 async function autoUpdatePrices() {
   console.log("Début de la mise à jour automatique des prix...");
-  
-  if (!state.cartes.length) return; // Rien à mettre à jour
+  if (!state.cartes.length) return;
   
   let updatedCount = 0;
 
-  // On parcourt toutes les cartes de ton stock (Analyse)
   for (const carte of state.cartes) {
-    // On ne met à jour que si un prix de marché est trouvé
     const newPrice = await fetchTCGdexPrice(carte.nom);
     
     if (newPrice && newPrice > 0) {
@@ -1496,27 +1489,23 @@ async function autoUpdatePrices() {
       carte.p9 = Math.round(newPrice * 1.0 * 100) / 100;
       updatedCount++;
     }
-    
-    // Petite pause pour ne pas surcharger l'API gratuite
     await new Promise(r => setTimeout(r, 1000)); 
   }
 
-  // Sauvegarde et rafraîchissement de l'écran
   if (updatedCount > 0) {
     save(); 
     renderAll(); 
     showToast(`${updatedCount} prix mis à jour via TCGdex !`);
   } else {
-    showToast("Aucun prix trouvé pour tes cartes sur TCGdex.", true);
+    showToast("Aucun prix trouvé sur TCGdex.", true);
   }
 }
 
-// Lancer la mise à jour au démarrage de la page
+// Lancer la mise à jour au démarrage
 window.addEventListener('load', () => {
   setTimeout(() => {
     autoUpdatePrices();
-    // Relancer toutes les X heures
     setInterval(autoUpdatePrices, UPDATE_INTERVAL_MS);
-  }, 5000); // On attend 5 sec que la page charge
+  }, 5000);
 });
 </script>
