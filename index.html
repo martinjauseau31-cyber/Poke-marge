@@ -700,8 +700,11 @@ async function fetchTCGdexPrice(nom, numero) {
     
     if(dData.pricing && dData.pricing.cardmarket) {
       const cm = dData.pricing.cardmarket;
-      // On privilégie 'trend' (tendance) qui est beaucoup plus stable que 'avg' (moyenne)
-      return cm.trend || cm.avg || cm.low || null;
+      // On privilégie la moyenne sur 30 jours (avg30) qui est très stable
+      let price = cm.avg30 || cm.avg7 || cm.trend || cm.low || cm.avg;
+      
+      // SÉCURITÉ : Si le prix dépasse 2000€, c'est une erreur de l'API, on l'ignore
+      if (price && price < 2000) return price; 
     }
     return null;
   } catch(e) { return null; }
