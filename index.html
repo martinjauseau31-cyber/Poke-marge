@@ -50,7 +50,6 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .kpi.cyan::after{background:radial-gradient(circle,rgba(0,212,255,.15),transparent 70%)}
 .kpi.green::after{background:radial-gradient(circle,rgba(0,230,118,.15),transparent 70%)}
 .kpi.purple::after{background:radial-gradient(circle,rgba(157,78,221,.18),transparent 70%)}
-.kpi.yellow::after{background:radial-gradient(circle,rgba(255,184,0,.18),transparent 70%)}
 .kpi-label{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:10px;font-weight:600}
 .kpi-value{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;letter-spacing:-1.5px;line-height:1;background:linear-gradient(180deg,#fff 0%,#a0a0b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .kpi-value.pos{background:linear-gradient(180deg,#7dffb0 0%,#00e676 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -113,7 +112,9 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <div class="h-actions">
     <button class="btn" onclick="ouvrirParametres()">Paramètres</button>
     <button class="btn" id="auth-btn">Se connecter</button>
-    <button class="btn" onclick="exporter()">Exporter</button>
+    <button class="btn" onclick="exporterCSV()">Export CSV</button>
+    <button class="btn" onclick="document.getElementById('import-csv').click()">Import CSV</button>
+    <input type="file" id="import-csv" accept=".csv" style="display:none" onchange="importerCSV(event)">
   </div>
 </header>
 
@@ -122,13 +123,14 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <button class="tab" data-tab="cartes">Analyse cartes</button>
   <button class="tab" data-tab="gradees">Cartes gradées</button>
   <button class="tab" data-tab="ventes">Journal ventes</button>
-  <button class="tab" data-tab="mensuel">Suivi mensuel</button>
+  <button class="tab" data-tab="wishlist">Wishlist</button>
   <button class="tab" data-tab="objectifs">Objectifs</button>
   <button class="tab" data-tab="stock">Stock annuel</button>
   <button class="tab" data-tab="collection">Ma collection</button>
   <button class="tab" data-tab="scelles">Mes Scellés</button>
 </nav>
 
+<!-- DASHBOARD -->
 <div class="tab-content active" id="tab-dashboard">
   <div class="grid g4" style="margin-bottom:16px">
     <div class="card kpi"><div class="kpi-label">Capital investi</div><div class="kpi-value" id="k-investi">0 €</div><div class="kpi-sub">Total achats</div></div>
@@ -139,7 +141,15 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   
   <div class="grid g2" style="margin-bottom:16px">
     <div class="card"><div class="sec-title">Courbe de trésorerie</div><div class="chart-wrap"><canvas id="ch-treso"></canvas></div></div>
-    <div class="card"><div class="sec-title">Répartition du capital</div><div class="chart-wrap"><canvas id="ch-rep"></canvas></div></div>
+    <div class="card"><div class="sec-title">Évolution de la valeur du parc</div><div class="chart-wrap"><canvas id="ch-portfolio"></canvas></div></div>
+  </div>
+  
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><div class="sec-title">Répartition du capital</div><div class="chart-wrap" style="height:250px"><canvas id="ch-rep"></canvas></div></div>
+    <div class="card">
+      <div class="sec-title">Top Movers (7 derniers jours)</div>
+      <div id="top-movers" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -148,14 +158,16 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </div>
 </div>
 
+<!-- ANALYSE CARTES -->
 <div class="tab-content" id="tab-cartes">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Ajouter une carte (Analyse EV)</div>
     <div class="fgrid fgrid3">
-      <div class="fg"><label>Nom de la carte</label><input type="text" id="c-nom" placeholder="Ex: Dracaufeu ex"></div>
+      <div class="fg"><label>Nom de la carte</label><input type="text" id="c-nom" placeholder="Ex: Dracaufeu"></div>
+      <div class="fg"><label>Numéro de la carte</label><input type="text" id="c-numero" placeholder="Ex: 4/102 ou 4"></div>
       <div class="fg"><label>Langue</label><select id="c-langue"><option>FR</option><option>JAP</option><option>EN</option></select></div>
-      <div class="fg"><label>Plateforme</label><select id="c-plateforme"><option>Vinted</option><option>eBay</option><option>Cardmarket</option></select></div>
-      <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="c-achat" step="0.01" value="0"></div>
+      <div class="fg"><label>Quantité</label><input type="number" id="c-qte" value="1" min="1"></div>
+      <div class="fg"><label>Prix d'achat unitaire (€)</label><input type="number" id="c-achat" step="0.01" value="0"></div>
       <div class="fg"><label>Frais de port (€)</label><input type="number" id="c-port" step="0.01" value="0"></div>
       <div class="fg"><label>Frais gradation (€)</label><input type="number" id="c-grad" step="0.01" value="0"></div>
       <div class="fg"><label>Probabilité P10 (%)</label><input type="number" id="c-prob" step="1" value="30"></div>
@@ -175,40 +187,32 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
       <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="ajouterCarte()" id="btn-add-carte">Ajouter la carte</button>
       <button class="btn" style="flex:1;justify-content:center;display:none;" id="btn-cancel-carte" onclick="annulerEditCarte()">Annuler</button>
     </div>
-    <button class="btn btn-cyan" style="width:100%;margin-top:10px;justify-content:center" onclick="actualiserPrixAPI()">Actualiser les prix via API (Cartes + Scellés)</button>
+    <button class="btn btn-cyan" style="width:100%;margin-top:10px;justify-content:center" onclick="autoUpdatePrices()">Actualiser les prix (API)</button>
   </div>
   <div class="card">
     <div class="sec-title">Cartes analysées</div>
     <input type="text" class="search-bar" id="search-cartes" placeholder="Rechercher..." oninput="renderCartes()">
     <div class="tbl-wrap"><table><thead><tr>
-      <th>Photo</th><th>Nom</th><th>Coût</th><th>Net 10</th><th>Net 9</th><th>P10</th><th>EV</th><th>Décision</th><th>Actions</th>
+      <th>Photo</th><th>Nom</th><th>Num</th><th>Qté</th><th>Coût Total</th><th>Net 10</th><th>Net 9</th><th>P10</th><th>EV</th><th>Décision</th><th>Actions</th>
     </tr></thead><tbody id="tb-cartes"></tbody></table></div>
   </div>
 </div>
 
+<!-- CARTES GRADÉES -->
 <div class="tab-content" id="tab-gradees">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Ajouter une carte gradée</div>
     <div class="fgrid fgrid3">
       <div class="fg"><label>Nom de la carte</label><input type="text" id="g-nom" placeholder="Ex: Dracaufeu PSA 10"></div>
-      <div class="fg"><label>Note / Gradeur</label><input type="text" id="g-note" placeholder="Ex: PSA 10, CCC 9.5"></div>
-      <div class="fg"><label>Statut</label><select id="g-statut">
-        <option>En stock</option>
-        <option>En gradation</option>
-        <option>En livraison</option>
-        <option>Vendu</option>
-      </select></div>
-      <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="g-achat" step="0.01" value="0"></div>
-      <div class="fg"><label>Valeur marché actuelle (€)</label><input type="number" id="g-valeur" step="0.01" value="0"></div>
+      <div class="fg"><label>Note / Gradeur</label><input type="text" id="g-note" placeholder="Ex: PSA 10"></div>
+      <div class="fg"><label>Statut</label><select id="g-statut"><option>En stock</option><option>En gradation</option><option>En livraison</option><option>Vendu</option></select></div>
+      <div class="fg"><label>Prix d'achat unitaire (€)</label><input type="number" id="g-achat" step="0.01" value="0"></div>
+      <div class="fg"><label>Valeur marché unitaire (€)</label><input type="number" id="g-valeur" step="0.01" value="0"></div>
       <div class="fg"><label>Quantité</label><input type="number" id="g-qte" value="1" min="1"></div>
       <div class="fg full">
          <label>Photo</label>
-         <label class="file-upload">
-           <span id="g-file-label">Choisir une image...</span>
-           <input type="file" accept="image/*" onchange="handleImageUpload(event, 'g-photo-preview')">
-         </label>
-         <input type="hidden" id="g-photo-data">
-         <img id="g-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
+         <label class="file-upload"><span id="g-file-label">Choisir une image...</span><input type="file" accept="image/*" onchange="handleImageUpload(event, 'g-photo-preview')"></label>
+         <input type="hidden" id="g-photo-data"><img id="g-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:18px;">
@@ -225,6 +229,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </div>
 </div>
 
+<!-- VENTES -->
 <div class="tab-content" id="tab-ventes">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Enregistrer une vente</div>
@@ -242,13 +247,23 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-ventes"></tbody></table></div></div>
 </div>
 
-<div class="tab-content" id="tab-mensuel">
-  <div class="card" style="margin-bottom:16px"><div class="sec-title">Activité mensuelle</div><div class="chart-wrap" style="height:340px"><canvas id="ch-mensuel"></canvas></div></div>
-  <div class="card"><div class="sec-title">Détail par mois</div><div class="tbl-wrap"><table><thead><tr>
-    <th>Mois</th><th>Achats</th><th>Investi</th><th>Ventes</th><th>CA net</th><th>Marge</th>
-  </tr></thead><tbody id="tb-mensuel"></tbody></table></div></div>
+<!-- WISHLIST -->
+<div class="tab-content" id="tab-wishlist">
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec-title">Ajouter une carte à la Wishlist</div>
+    <div class="fgrid fgrid3">
+      <div class="fg"><label>Nom de la carte</label><input type="text" id="w-nom" placeholder="Ex: Pikachu Illustrator"></div>
+      <div class="fg"><label>Numéro</label><input type="text" id="w-numero" placeholder="Ex: 1/102"></div>
+      <div class="fg"><label>Prix cible (€)</label><input type="number" id="w-prix" step="0.01" value="0"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:18px;justify-content:center" onclick="ajouterWishlist()">Ajouter à la wishlist</button>
+  </div>
+  <div class="card"><div class="sec-title">Mes envies</div><div class="tbl-wrap"><table><thead><tr>
+    <th>Nom</th><th>Numéro</th><th>Prix cible</th><th>Prix actuel</th><th>Statut</th><th></th>
+  </tr></thead><tbody id="tb-wishlist"></tbody></table></div></div>
 </div>
 
+<!-- OBJECTIFS -->
 <div class="tab-content" id="tab-objectifs">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Définir mes objectifs annuels</div>
@@ -262,6 +277,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   <div class="card"><div class="sec-title">Progression</div><div id="obj-progress"></div></div>
 </div>
 
+<!-- STOCK ANNUEL -->
 <div class="tab-content" id="tab-stock">
   <div class="grid g3" style="margin-bottom:16px">
     <div class="card kpi"><div class="kpi-label">Produits en stock</div><div class="kpi-value" id="s-stock">0</div></div>
@@ -274,6 +290,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </tr></thead><tbody id="tb-stock"></tbody></table></div></div>
 </div>
 
+<!-- COLLECTION -->
 <div class="tab-content" id="tab-collection">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Ajouter à ma collection perso (Raw)</div>
@@ -287,12 +304,8 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
       <div class="fg"><label>Quantité</label><input type="number" id="p-qte" value="1" min="1"></div>
       <div class="fg full">
          <label>Photo</label>
-         <label class="file-upload">
-           <span id="p-file-label">Choisir une image...</span>
-           <input type="file" accept="image/*" onchange="handleImageUpload(event, 'p-photo-preview')">
-         </label>
-         <input type="hidden" id="p-photo-data">
-         <img id="p-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
+         <label class="file-upload"><span id="p-file-label">Choisir une image...</span><input type="file" accept="image/*" onchange="handleImageUpload(event, 'p-photo-preview')"></label>
+         <input type="hidden" id="p-photo-data"><img id="p-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:18px;">
@@ -309,6 +322,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
   </div>
 </div>
 
+<!-- SCELLÉS -->
 <div class="tab-content" id="tab-scelles">
   <div class="card" style="margin-bottom:16px">
     <div class="sec-title">Ajouter un produit scellé</div>
@@ -317,21 +331,15 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
       <div class="fg">
         <label>Type / Nom</label>
         <input type="text" id="sc-type" list="liste-types-scelles" placeholder="Ex: Display, Coffret...">
-        <datalist id="liste-types-scelles">
-          <option value="Display"><option value="ETB"><option value="Coffret"><option value="Tin"><option value="Tripack">
-        </datalist>
+        <datalist id="liste-types-scelles"><option value="Display"><option value="ETB"><option value="Coffret"><option value="Tin"><option value="Tripack"></datalist>
       </div>
-      <div class="fg"><label>Prix d'achat (€)</label><input type="number" id="sc-achat" step="0.01" value="0"></div>
+      <div class="fg"><label>Prix d'achat unitaire (€)</label><input type="number" id="sc-achat" step="0.01" value="0"></div>
       <div class="fg"><label>Quantité</label><input type="number" id="sc-qte" value="1" min="1"></div>
-      <div class="fg"><label>Valeur actuelle (€)</label><input type="number" id="sc-valeur" step="0.01" value="0"></div>
+      <div class="fg"><label>Valeur actuelle unitaire (€)</label><input type="number" id="sc-valeur" step="0.01" value="0"></div>
       <div class="fg full">
          <label>Photo</label>
-         <label class="file-upload">
-           <span id="sc-file-label">Choisir une image...</span>
-           <input type="file" accept="image/*" onchange="handleImageUpload(event, 'sc-photo-preview')">
-         </label>
-         <input type="hidden" id="sc-photo-data">
-         <img id="sc-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
+         <label class="file-upload"><span id="sc-file-label">Choisir une image...</span><input type="file" accept="image/*" onchange="handleImageUpload(event, 'sc-photo-preview')"></label>
+         <input type="hidden" id="sc-photo-data"><img id="sc-photo-preview" class="thumb" style="display:none;margin-top:10px;" onclick="downloadImage(this.src)">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:18px;">
@@ -363,7 +371,7 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
     <div class="fg" style="margin-bottom:20px">
       <label>Taux de frais plateforme (%)</label>
       <input type="number" id="param-taux" step="0.1" value="12.3">
-      <p style="font-size:12px;color:var(--dim);margin-top:5px;">Appliqué lors du calcul des marges (Vinted ~12%, eBay ~15%).</p>
+      <p style="font-size:12px;color:var(--dim);margin-top:5px;">Appliqué lors du calcul des marges.</p>
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveParametres()">Enregistrer</button>
@@ -375,25 +383,19 @@ tbody tr:hover td{background:rgba(255,255,255,.025)}
 <div class="toast-container" id="toast-container"></div>
 <script>
 /* ============================================================
-   POKÉMARGES PRO V5 — PARTIE 2/3 : LOGIQUE GLOBALE
+   POKÉMARGES PRO V6 — PARTIE 2/3 : LOGIQUE & CRUD
    ============================================================ */
 
 let state = {
-  cartes: [],
-  gradees: [],
-  ventes: [],
-  collection: [],
-  scelles: [],
+  cartes: [], gradees: [], ventes: [], collection: [], scelles: [], wishlist: [],
   typesScelles: ['Display', 'ETB', 'Coffret', 'Tin', 'Tripack'],
   objectifs: { ca: 5000, marge: 2000, cartes: 150 },
-  parametres: { tauxFrais: 12.3 }
+  parametres: { tauxFrais: 12.3 },
+  portfolioHistory: {} // { "2023-10-27": 1500.50, ... }
 };
 
-// Variables pour l'édition (mémoire du formulaire en cours)
-let editingCarteId = null;
-let editingGradeeId = null;
-let editingCollectionId = null;
-let editingScelleId = null;
+// Variables d'édition
+let editingCarteId = null, editingGradeeId = null, editingCollectionId = null, editingScelleId = null;
 
 /* ---------- DEXIE CLOUD ---------- */
 const db = new Dexie('PokemargesDB', { addons: [DexieCloud.dexieCloud] });
@@ -401,18 +403,15 @@ db.version(1).stores({ appState: 'id' });
 db.cloud.configure({ databaseUrl: 'https://zkb6tnho2.dexie.cloud', requireAuth: true });
 
 async function cloudSave() {
-  try { await db.appState.put({ id: 'main', data: state, updatedAt: Date.now() }); } 
-  catch (e) { console.warn('Cloud save error:', e); }
+  try { await db.appState.put({ id: 'main', data: state, updatedAt: Date.now() }); } catch (e) { console.warn(e); }
 }
-
 async function cloudLoad() {
   try {
     const row = await db.appState.get('main');
     if (row && row.data) { state = { ...state, ...row.data }; return true; }
-  } catch (e) { console.warn('Cloud load error:', e); }
+  } catch (e) { console.warn(e); }
   return false;
 }
-
 function updateAuthButton() {
   const btn = document.getElementById('auth-btn');
   if (!btn) return;
@@ -429,81 +428,43 @@ function updateAuthButton() {
     }
   } catch (e) { console.warn(e); }
 }
+db.cloud.currentUser.subscribe(async (user) => { updateAuthButton(); if (user && user.isLoggedIn && await cloudLoad()) renderAll(); });
 
-db.cloud.currentUser.subscribe(async (user) => {
-  updateAuthButton();
-  if (user && user.isLoggedIn) {
-    if (await cloudLoad()) renderAll();
-  }
-});
-
-function save() {
-  try { localStorage.setItem('pokemarges_v5', JSON.stringify(state)); } catch(e) {}
-  cloudSave();
-}
-
+function save() { try { localStorage.setItem('pokemarges_v6', JSON.stringify(state)); } catch(e) {} cloudSave(); }
 function load() {
-  const raw = localStorage.getItem('pokemarges_v5');
-  if (!raw) return;
-  try { const p = JSON.parse(raw); state = { ...state, ...p }; } catch(e) {}
+  const raw = localStorage.getItem('pokemarges_v6');
+  if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e) {} }
 }
 
-/* ---------- UTILITAIRES & IMAGES ---------- */
+/* ---------- UTILS & IMAGES ---------- */
 function fmt(n) { n = +n || 0; return n.toFixed(2).replace('.', ',') + ' €'; }
 function fmtP(n) { n = +n || 0; return n.toFixed(1).replace('.', ',') + ' %'; }
-function fmtInt(n) { return Math.round(+n || 0).toString(); }
-
-function showToast(message, isError = false) {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = 'toast' + (isError ? ' error' : '');
-  toast.textContent = message;
-  container.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+function showToast(msg, err = false) {
+  const c = document.getElementById('toast-container'); if (!c) return;
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' error' : ''); t.textContent = msg;
+  c.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
 }
-
-// Compression d'image (Réduit à 300px de large et qualité 70% pour ne pas saturer le cloud)
 function handleImageUpload(event, previewId) {
-  const file = event.target.files[0];
-  if (!file) return;
-
+  const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
-      const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 300;
-      const scaleSize = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scaleSize;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
+      const canvas = document.createElement('canvas'); const MAX = 300;
+      canvas.width = MAX; canvas.height = img.height * (MAX / img.width);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      
-      const preview = document.getElementById(previewId);
-      if (preview) { preview.src = dataUrl; preview.style.display = 'block'; }
-      
-      const hiddenInputId = previewId.replace('-preview', '-data');
-      const hiddenInput = document.getElementById(hiddenInputId);
-      if (hiddenInput) hiddenInput.value = dataUrl;
-      
-      const label = event.target.previousElementSibling;
-      if (label) label.textContent = "Image chargée !";
+      const prev = document.getElementById(previewId);
+      if (prev) { prev.src = dataUrl; prev.style.display = 'block'; }
+      const hidden = document.getElementById(previewId.replace('-preview', '-data'));
+      if (hidden) hidden.value = dataUrl;
+      const label = event.target.previousElementSibling; if (label) label.textContent = "Image chargée !";
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
-
-function downloadImage(dataUrl) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = 'photo_pokemarges_' + Date.now() + '.jpg';
-  a.click();
-}
+function downloadImage(dataUrl) { const a = document.createElement('a'); a.href = dataUrl; a.download = 'image.jpg'; a.click(); }
 
 /* ---------- NAVIGATION & CALCULS ---------- */
 function initTabs() {
@@ -511,591 +472,265 @@ function initTabs() {
     t.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      const target = document.getElementById('tab-' + t.dataset.tab);
-      if (target) target.classList.add('active');
+      t.classList.add('active'); document.getElementById('tab-' + t.dataset.tab).classList.add('active');
       renderAll();
     };
   });
 }
-
 function getTauxFrais() { return (state.parametres.tauxFrais || 12.3) / 100; }
-function coutRevient(c) { return (+c.achat || 0) + (+c.port || 0) + (+c.grad || 0); }
-function netCCC(c, prixRevente) { return prixRevente * (1 - getTauxFrais()) - coutRevient(c); }
-function calcEV(c) {
-  const p10 = (+c.prob || 0) / 100;
-  return p10 * netCCC(c, +c.p10 || 0) + (1 - p10) * netCCC(c, +c.p9 || 0);
-}
-function seuilP10(c) {
-  const n10 = netCCC(c, +c.p10 || 0);
-  const n9 = netCCC(c, +c.p9 || 0);
-  if (n9 >= 0) return 0;
-  if (n10 <= 0) return 100;
-  return Math.round((-n9 / (n10 - n9)) * 100);
-}
+function coutRevient(c) { return ((+c.achat || 0) + (+c.port || 0) + (+c.grad || 0)) * (+c.qte || 1); }
+function netCCC(c, prixRevente) { return (prixRevente * (1 - getTauxFrais()) - ((+c.achat || 0) + (+c.grad || 0))) * (+c.qte || 1) - (+c.port || 0); }
+function calcEV(c) { const p10 = (+c.prob || 0) / 100; return p10 * netCCC(c, +c.p10 || 0) + (1 - p10) * netCCC(c, +c.p9 || 0); }
 
 /* ---------- PARAMÈTRES ---------- */
 function ouvrirParametres() { document.getElementById('param-taux').value = state.parametres.tauxFrais; document.getElementById('modal-parametres').classList.add('active'); }
 function fermerParametres() { document.getElementById('modal-parametres').classList.remove('active'); }
-function saveParametres() {
-  state.parametres.tauxFrais = +document.getElementById('param-taux').value || 12.3;
-  save(); fermerParametres(); showToast('Paramètres enregistrés.'); renderAll();
-}
+function saveParametres() { state.parametres.tauxFrais = +document.getElementById('param-taux').value || 12.3; save(); fermerParametres(); renderAll(); showToast('Paramètres enregistrés.'); }
 
-/* ---------- CARTES (ANALYSE) ---------- */
+/* ---------- CARTES ---------- */
 function ajouterCarte() {
   const nom = document.getElementById('c-nom').value.trim();
   if (!nom) { showToast('Donne un nom.', true); return; }
-
-  const photo = document.getElementById('c-photo-data').value;
   const newItem = {
-    id: editingCarteId || Date.now() + Math.random().toString(),
-    nom, photo,
+    id: editingCarteId || Date.now() + Math.random().toString(), nom,
+    numero: document.getElementById('c-numero').value.trim(),
     langue: document.getElementById('c-langue').value,
-    plateforme: document.getElementById('c-plateforme').value,
-    achat: +document.getElementById('c-achat').value || 0,
-    port: +document.getElementById('c-port').value || 0,
-    grad: +document.getElementById('c-grad').value || 0,
-    prob: +document.getElementById('c-prob').value || 0,
-    p10: +document.getElementById('c-p10').value || 0,
-    p9: +document.getElementById('c-p9').value || 0,
-    date: new Date().toISOString().slice(0, 10)
+    qte: +document.getElementById('c-qte').value || 1,
+    achat: +document.getElementById('c-achat').value || 0, port: +document.getElementById('c-port').value || 0,
+    grad: +document.getElementById('c-grad').value || 0, prob: +document.getElementById('c-prob').value || 0,
+    p10: +document.getElementById('c-p10').value || 0, p9: +document.getElementById('c-p9').value || 0,
+    photo: document.getElementById('c-photo-data').value, date: new Date().toISOString().slice(0, 10)
   };
-
-  if (editingCarteId) {
-    state.cartes = state.cartes.map(c => String(c.id) === String(editingCarteId) ? newItem : c);
-    showToast('Carte modifiée.');
-    annulerEditCarte();
-  } else {
-    state.cartes.push(newItem);
-    showToast('Carte ajoutée.');
-  }
-  resetForm('c'); save(); renderAll();
+  if (editingCarteId) { state.cartes = state.cartes.map(x => String(x.id) === String(editingCarteId) ? newItem : x); annulerEditCarte(); }
+  else { state.cartes.push(newItem); }
+  resetForm('c'); save(); renderAll(); showToast('Enregistré.');
 }
-
 function editerCarte(id) {
-  const c = state.cartes.find(x => String(x.id) === String(id));
-  if (!c) return;
+  const c = state.cartes.find(x => String(x.id) === String(id)); if (!c) return;
   editingCarteId = id;
-  document.getElementById('c-nom').value = c.nom;
-  document.getElementById('c-langue').value = c.langue;
-  document.getElementById('c-plateforme').value = c.plateforme;
-  document.getElementById('c-achat').value = c.achat;
-  document.getElementById('c-port').value = c.port;
-  document.getElementById('c-grad').value = c.grad;
-  document.getElementById('c-prob').value = c.prob;
-  document.getElementById('c-p10').value = c.p10;
-  document.getElementById('c-p9').value = c.p9;
-  
-  if (c.photo) {
-    document.getElementById('c-photo-data').value = c.photo;
-    const prev = document.getElementById('c-photo-preview');
-    prev.src = c.photo; prev.style.display = 'block';
-  }
-  
-  document.getElementById('btn-add-carte').textContent = 'Enregistrer les modifications';
-  document.getElementById('btn-cancel-carte').style.display = 'inline-flex';
+  ['nom','numero','achat','port','grad','prob','p10','p9','qte'].forEach(k => { const el = document.getElementById('c-'+k); if(el) el.value = c[k] || (k==='qte'?1:0); });
+  document.getElementById('c-langue').value = c.langue || 'FR';
+  if(c.photo) { document.getElementById('c-photo-data').value = c.photo; document.getElementById('c-photo-preview').src = c.photo; document.getElementById('c-photo-preview').style.display='block'; }
+  document.getElementById('btn-add-carte').textContent = 'Enregistrer les modifs'; document.getElementById('btn-cancel-carte').style.display = 'inline-flex';
 }
-
-function annulerEditCarte() {
-  editingCarteId = null;
-  resetForm('c');
-  document.getElementById('btn-add-carte').textContent = 'Ajouter la carte';
-  document.getElementById('btn-cancel-carte').style.display = 'none';
-}
-
-function supprimerCarte(id) {
-  if (!confirm('Supprimer cette carte ?')) return;
-  state.cartes = state.cartes.filter(c => String(c.id) !== String(id));
-  save(); renderAll(); showToast('Carte supprimée.');
-}
-
+function annulerEditCarte() { editingCarteId = null; resetForm('c'); document.getElementById('btn-add-carte').textContent = 'Ajouter la carte'; document.getElementById('btn-cancel-carte').style.display = 'none'; }
+function supprimerCarte(id) { if(confirm('Supprimer ?')) { state.cartes = state.cartes.filter(x => String(x.id) !== String(id)); save(); renderAll(); } }
 function renderCartes() {
-  const tb = document.getElementById('tb-cartes');
-  if (!tb) return;
+  const tb = document.getElementById('tb-cartes'); if (!tb) return;
   const search = (document.getElementById('search-cartes')?.value || '').toLowerCase();
-  const filtered = state.cartes.filter(c => c.nom.toLowerCase().includes(search));
-
-  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">Aucune carte.</td></tr>'; return; }
-
+  const filtered = state.cartes.filter(c => c.nom.toLowerCase().includes(search) || (c.numero && c.numero.toLowerCase().includes(search)));
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="11" class="empty">Aucune carte.</td></tr>'; return; }
   tb.innerHTML = filtered.map(c => {
-    const ev = calcEV(c);
-    const n10 = netCCC(c, +c.p10 || 0);
-    const n9 = netCCC(c, +c.p9 || 0);
+    const ev = calcEV(c), n10 = netCCC(c, +c.p10), n9 = netCCC(c, +c.p9);
     const dec = ev > 0 ? '<span class="badge b-ok">OK</span>' : '<span class="badge b-no">NON</span>';
     const img = c.photo ? `<img src="${c.photo}" class="thumb" onclick="downloadImage(this.src)">` : '-';
-    return `<tr>
-      <td>${img}</td>
-      <td><strong>${c.nom}</strong></td>
-      <td>${fmt(coutRevient(c))}</td>
-      <td style="color:${n10 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n10)}</td>
-      <td style="color:${n9 >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(n9)}</td>
-      <td>${c.prob}%</td>
-      <td style="color:${ev >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(ev)}</td>
-      <td>${dec}</td>
-      <td>
-        <button class="btn btn-sm" onclick="editerCarte('${c.id}')">✎</button>
-        <button class="btn btn-sm btn-danger" onclick="supprimerCarte('${c.id}')">X</button>
-      </td>
-    </tr>`;
+    return `<tr><td>${img}</td><td><strong>${c.nom}</strong></td><td>${c.numero||'-'}</td><td>${c.qte}</td><td>${fmt(coutRevient(c))}</td><td style="color:${n10>=0?'var(--green)':'#ff8a92'}">${fmt(n10)}</td><td style="color:${n9>=0?'var(--green)':'#ff8a92'}">${fmt(n9)}</td><td>${c.prob}%</td><td style="color:${ev>=0?'var(--green)':'#ff8a92'};font-weight:700">${fmt(ev)}</td><td>${dec}</td><td><button class="btn btn-sm" onclick="editerCarte('${c.id}')">✎</button> <button class="btn btn-sm btn-danger" onclick="supprimerCarte('${c.id}')">X</button></td></tr>`;
   }).join('');
 }
 
-/* ---------- CARTES GRADÉES ---------- */
+/* ---------- WISHLIST ---------- */
+function ajouterWishlist() {
+  const nom = document.getElementById('w-nom').value.trim(); if(!nom) return;
+  state.wishlist.push({ id: Date.now()+'', nom, numero: document.getElementById('w-numero').value, cible: +document.getElementById('w-prix').value || 0, actuel: 0 });
+  document.getElementById('w-nom').value=''; save(); renderAll(); showToast('Ajouté à la wishlist.');
+}
+function supprimerWishlist(id) { state.wishlist = state.wishlist.filter(x => x.id !== id); save(); renderAll(); }
+function renderWishlist() {
+  const tb = document.getElementById('tb-wishlist'); if(!tb) return;
+  if(!state.wishlist.length) { tb.innerHTML='<tr><td colspan="6" class="empty">Wishlist vide.</td></tr>'; return; }
+  tb.innerHTML = state.wishlist.map(w => {
+    const hit = w.actuel > 0 && w.actuel <= w.cible;
+    return `<tr><td><strong>${w.nom}</strong></td><td>${w.numero}</td><td>${fmt(w.cible)}</td><td style="color:var(--cyan)">${fmt(w.actuel)}</td><td>${hit?'<span class="badge b-ok">Cible atteinte !</span>':'<span class="badge b-warn">En attente</span>'}</td><td><button class="btn btn-sm btn-danger" onclick="supprimerWishlist('${w.id}')">X</button></td></tr>`;
+  }).join('');
+}
+
+/* ---------- AUTRES CRUD (Gradées, Collection, Scellés) ---------- */
 function ajouterGradee() {
-  const nom = document.getElementById('g-nom').value.trim();
-  if (!nom) { showToast('Donne un nom.', true); return; }
-
-  const photo = document.getElementById('g-photo-data').value;
-  const newItem = {
-    id: editingGradeeId || Date.now() + Math.random().toString(),
-    nom, photo,
-    note: document.getElementById('g-note').value,
-    statut: document.getElementById('g-statut').value,
-    achat: +document.getElementById('g-achat').value || 0,
-    valeur: +document.getElementById('g-valeur').value || 0,
-    qte: +document.getElementById('g-qte').value || 1
-  };
-
-  if (editingGradeeId) {
-    state.gradees = state.gradees.map(x => String(x.id) === String(editingGradeeId) ? newItem : x);
-    showToast('Carte gradée modifiée.');
-    annulerEditGradee();
-  } else {
-    state.gradees.push(newItem);
-    showToast('Carte gradée ajoutée.');
-  }
-  resetForm('g'); save(); renderAll();
+  const nom = document.getElementById('g-nom').value.trim(); if(!nom) return;
+  const item = { id: editingGradeeId || Date.now()+'', nom, note: document.getElementById('g-note').value, statut: document.getElementById('g-statut').value, achat: +document.getElementById('g-achat').value, valeur: +document.getElementById('g-valeur').value, qte: +document.getElementById('g-qte').value, photo: document.getElementById('g-photo-data').value };
+  if(editingGradeeId) { state.gradees = state.gradees.map(x => String(x.id)===String(editingGradeeId)?item:x); annulerEditGradee(); } else state.gradees.push(item);
+  resetForm('g'); save(); renderAll(); showToast('Enregistré.');
 }
-
-function editerGradee(id) {
-  const item = state.gradees.find(x => String(x.id) === String(id));
-  if (!item) return;
-  editingGradeeId = id;
-  document.getElementById('g-nom').value = item.nom;
-  document.getElementById('g-note').value = item.note;
-  document.getElementById('g-statut').value = item.statut;
-  document.getElementById('g-achat').value = item.achat;
-  document.getElementById('g-valeur').value = item.valeur;
-  document.getElementById('g-qte').value = item.qte;
-  
-  if (item.photo) {
-    document.getElementById('g-photo-data').value = item.photo;
-    const prev = document.getElementById('g-photo-preview');
-    prev.src = item.photo; prev.style.display = 'block';
-  }
-  
-  document.getElementById('btn-add-gradee').textContent = 'Enregistrer les modifications';
-  document.getElementById('btn-cancel-gradee').style.display = 'inline-flex';
-}
-
-function annulerEditGradee() {
-  editingGradeeId = null;
-  resetForm('g');
-  document.getElementById('btn-add-gradee').textContent = 'Ajouter la carte gradée';
-  document.getElementById('btn-cancel-gradee').style.display = 'none';
-}
-
-function supprimerGradee(id) {
-  if (!confirm('Supprimer ?')) return;
-  state.gradees = state.gradees.filter(c => String(c.id) !== String(id));
-  save(); renderAll(); showToast('Supprimée.');
-}
-
+function editerGradee(id) { const item = state.gradees.find(x=>String(x.id)===String(id)); if(!item) return; editingGradeeId = id; document.getElementById('g-nom').value=item.nom; document.getElementById('g-note').value=item.note; document.getElementById('g-statut').value=item.statut; document.getElementById('g-achat').value=item.achat; document.getElementById('g-valeur').value=item.valeur; document.getElementById('g-qte').value=item.qte; if(item.photo){document.getElementById('g-photo-data').value=item.photo;document.getElementById('g-photo-preview').src=item.photo;document.getElementById('g-photo-preview').style.display='block';} document.getElementById('btn-add-gradee').textContent='Enregistrer les modifs'; document.getElementById('btn-cancel-gradee').style.display='inline-flex'; }
+function annulerEditGradee() { editingGradeeId=null; resetForm('g'); document.getElementById('btn-add-gradee').textContent='Ajouter la carte gradée'; document.getElementById('btn-cancel-gradee').style.display='none'; }
+function supprimerGradee(id) { state.gradees = state.gradees.filter(x=>String(x.id)!==String(id)); save(); renderAll(); }
 function renderGradees() {
-  const tb = document.getElementById('tb-gradees');
-  if (!tb) return;
-  const search = (document.getElementById('search-gradees')?.value || '').toLowerCase();
-  const filtered = state.gradees.filter(c => c.nom.toLowerCase().includes(search));
-
-  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Aucune carte gradée.</td></tr>'; return; }
-
-  tb.innerHTML = filtered.map(c => {
+  const tb = document.getElementById('tb-gradees'); if(!tb) return;
+  if(!state.gradees.length) { tb.innerHTML='<tr><td colspan="8" class="empty">Aucune carte gradée.</td></tr>'; return; }
+  tb.innerHTML = state.gradees.map(c => {
     const img = c.photo ? `<img src="${c.photo}" class="thumb" onclick="downloadImage(this.src)">` : '-';
-    let badgeClass = 'b-ok';
-    if (c.statut === 'En gradation') badgeClass = 'b-warn';
-    if (c.statut === 'En livraison') badgeClass = 'b-cyan';
-    if (c.statut === 'Vendu') badgeClass = 'b-no';
-
-    return `<tr>
-      <td>${img}</td>
-      <td><strong>${c.nom}</strong></td>
-      <td><span class="badge b-purple">${c.note}</span></td>
-      <td><span class="badge ${badgeClass}">${c.statut}</span></td>
-      <td>${c.qte}</td>
-      <td>${fmt(c.achat)}</td>
-      <td style="color:var(--cyan);font-weight:bold">${fmt(c.valeur)}</td>
-      <td>
-        <button class="btn btn-sm" onclick="editerGradee('${c.id}')">✎</button>
-        <button class="btn btn-sm btn-danger" onclick="supprimerGradee('${c.id}')">X</button>
-      </td>
-    </tr>`;
+    let bc = 'b-ok'; if(c.statut==='En gradation') bc='b-warn'; if(c.statut==='En livraison') bc='b-cyan'; if(c.statut==='Vendu') bc='b-no';
+    return `<tr><td>${img}</td><td><strong>${c.nom}</strong></td><td><span class="badge b-purple">${c.note}</span></td><td><span class="badge ${bc}">${c.statut}</span></td><td>${c.qte}</td><td>${fmt(c.achat)}</td><td style="color:var(--cyan)">${fmt(c.valeur)}</td><td><button class="btn btn-sm" onclick="editerGradee('${c.id}')">✎</button> <button class="btn btn-sm btn-danger" onclick="supprimerGradee('${c.id}')">X</button></td></tr>`;
   }).join('');
 }
 
-/* ---------- SCELLÉS ---------- */
 function ajouterScelle() {
-  const nom = document.getElementById('sc-nom').value.trim();
-  if (!nom) { showToast('Donne un nom.', true); return; }
-
-  const typeScelle = document.getElementById('sc-type').value.trim() || 'Autre';
-  if (!state.typesScelles.includes(typeScelle)) state.typesScelles.push(typeScelle);
-
-  const photo = document.getElementById('sc-photo-data').value;
-  const newItem = {
-    id: editingScelleId || Date.now() + Math.random().toString(),
-    nom, type: typeScelle, photo,
-    achat: +document.getElementById('sc-achat').value || 0,
-    qte: +document.getElementById('sc-qte').value || 1,
-    valeur: +document.getElementById('sc-valeur').value || 0,
-    date: new Date().toISOString().slice(0, 10)
-  };
-
-  if (editingScelleId) {
-    state.scelles = state.scelles.map(x => String(x.id) === String(editingScelleId) ? newItem : x);
-    showToast('Scellé modifié.');
-    annulerEditScelle();
-  } else {
-    state.scelles.push(newItem);
-    showToast('Scellé ajouté.');
-  }
-  resetForm('sc'); save(); renderAll();
+  const nom = document.getElementById('sc-nom').value.trim(); if(!nom) return;
+  const type = document.getElementById('sc-type').value.trim() || 'Autre';
+  if(!state.typesScelles.includes(type)) state.typesScelles.push(type);
+  const item = { id: editingScelleId || Date.now()+'', nom, type, achat: +document.getElementById('sc-achat').value, qte: +document.getElementById('sc-qte').value, valeur: +document.getElementById('sc-valeur').value, photo: document.getElementById('sc-photo-data').value };
+  if(editingScelleId) { state.scelles = state.scelles.map(x=>String(x.id)===String(editingScelleId)?item:x); annulerEditScelle(); } else state.scelles.push(item);
+  resetForm('sc'); save(); renderAll(); showToast('Enregistré.');
 }
-
-function editerScelle(id) {
-  const item = state.scelles.find(x => String(x.id) === String(id));
-  if (!item) return;
-  editingScelleId = id;
-  document.getElementById('sc-nom').value = item.nom;
-  document.getElementById('sc-type').value = item.type;
-  document.getElementById('sc-achat').value = item.achat;
-  document.getElementById('sc-qte').value = item.qte;
-  document.getElementById('sc-valeur').value = item.valeur;
-  
-  if (item.photo) {
-    document.getElementById('sc-photo-data').value = item.photo;
-    const prev = document.getElementById('sc-photo-preview');
-    prev.src = item.photo; prev.style.display = 'block';
-  }
-  
-  document.getElementById('btn-add-scelle').textContent = 'Enregistrer les modifications';
-  document.getElementById('btn-cancel-scelle').style.display = 'inline-flex';
-}
-
-function annulerEditScelle() {
-  editingScelleId = null;
-  resetForm('sc');
-  document.getElementById('btn-add-scelle').textContent = 'Ajouter au stock scellé';
-  document.getElementById('btn-cancel-scelle').style.display = 'none';
-}
-
-function supprimerScelle(id) {
-  if (!confirm('Supprimer ce produit ?')) return;
-  state.scelles = state.scelles.filter(s => String(s.id) !== String(id));
-  save(); renderAll(); showToast('Supprimé.');
-}
-
+function editerScelle(id) { const item = state.scelles.find(x=>String(x.id)===String(id)); if(!item) return; editingScelleId = id; document.getElementById('sc-nom').value=item.nom; document.getElementById('sc-type').value=item.type; document.getElementById('sc-achat').value=item.achat; document.getElementById('sc-qte').value=item.qte; document.getElementById('sc-valeur').value=item.valeur; if(item.photo){document.getElementById('sc-photo-data').value=item.photo;document.getElementById('sc-photo-preview').src=item.photo;document.getElementById('sc-photo-preview').style.display='block';} document.getElementById('btn-add-scelle').textContent='Enregistrer les modifs'; document.getElementById('btn-cancel-scelle').style.display='inline-flex'; }
+function annulerEditScelle() { editingScelleId=null; resetForm('sc'); document.getElementById('btn-add-scelle').textContent='Ajouter au stock scellé'; document.getElementById('btn-cancel-scelle').style.display='none'; }
+function supprimerScelle(id) { state.scelles = state.scelles.filter(x=>String(x.id)!==String(id)); save(); renderAll(); }
 function renderScelles() {
-  const datalist = document.getElementById('liste-types-scelles');
-  if (datalist && state.typesScelles) datalist.innerHTML = state.typesScelles.map(t => `<option value="${t}">`).join('');
-
-  const tb = document.getElementById('tb-scelles');
-  if (!tb) return;
-
-  const totalValeur = state.scelles.reduce((s, i) => s + (i.valeur * i.qte), 0);
-  const totalMarge = state.scelles.reduce((s, i) => s + ((i.valeur - i.achat) * i.qte), 0);
-  const totalQte = state.scelles.reduce((s, i) => s + i.qte, 0);
-
-  if (document.getElementById('sc-total-valeur')) document.getElementById('sc-total-valeur').textContent = fmt(totalValeur);
-  if (document.getElementById('sc-nb-produits')) document.getElementById('sc-nb-produits').textContent = totalQte;
-  if (document.getElementById('sc-marge-latente')) {
-    document.getElementById('sc-marge-latente').textContent = fmt(totalMarge);
-    document.getElementById('sc-marge-latente').className = 'kpi-value ' + (totalMarge >= 0 ? 'pos' : 'neg');
-  }
-
-  if (!state.scelles.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Aucun produit scellé.</td></tr>'; return; }
-
-  tb.innerHTML = state.scelles.map(item => {
-    const marge = (item.valeur - item.achat) * item.qte;
-    const img = item.photo ? `<img src="${item.photo}" class="thumb" onclick="downloadImage(this.src)">` : '-';
-    return `<tr>
-      <td>${img}</td>
-      <td><strong>${item.nom}</strong></td>
-      <td>${item.type}</td>
-      <td>${item.qte}</td>
-      <td>${fmt(item.achat)}</td>
-      <td style="color:var(--cyan)">${fmt(item.valeur)}</td>
-      <td style="color:${marge >= 0 ? 'var(--green)' : '#ff8a92'}">${fmt(marge)}</td>
-      <td>
-        <button class="btn btn-sm" onclick="editerScelle('${item.id}')">✎</button>
-        <button class="btn btn-sm btn-danger" onclick="supprimerScelle('${item.id}')">X</button>
-      </td>
-    </tr>`;
+  const dl = document.getElementById('liste-types-scelles'); if(dl) dl.innerHTML = state.typesScelles.map(t=>`<option value="${t}">`).join('');
+  const tb = document.getElementById('tb-scelles'); if(!tb) return;
+  const tv = state.scelles.reduce((s,i)=>s+(i.valeur*i.qte),0), tm = state.scelles.reduce((s,i)=>s+((i.valeur-i.achat)*i.qte),0), tq = state.scelles.reduce((s,i)=>s+i.qte,0);
+  if(document.getElementById('sc-total-valeur')) document.getElementById('sc-total-valeur').textContent = fmt(tv);
+  if(document.getElementById('sc-nb-produits')) document.getElementById('sc-nb-produits').textContent = tq;
+  if(document.getElementById('sc-marge-latente')) { document.getElementById('sc-marge-latente').textContent = fmt(tm); document.getElementById('sc-marge-latente').className = 'kpi-value ' + (tm>=0?'pos':'neg'); }
+  if(!state.scelles.length) { tb.innerHTML='<tr><td colspan="8" class="empty">Aucun produit scellé.</td></tr>'; return; }
+  tb.innerHTML = state.scelles.map(i => {
+    const img = i.photo ? `<img src="${i.photo}" class="thumb" onclick="downloadImage(this.src)">` : '-'; const m = (i.valeur-i.achat)*i.qte;
+    return `<tr><td>${img}</td><td><strong>${i.nom}</strong></td><td>${i.type}</td><td>${i.qte}</td><td>${fmt(i.achat)}</td><td style="color:var(--cyan)">${fmt(i.valeur)}</td><td style="color:${m>=0?'var(--green)':'#ff8a92'}">${fmt(m)}</td><td><button class="btn btn-sm" onclick="editerScelle('${i.id}')">✎</button> <button class="btn btn-sm btn-danger" onclick="supprimerScelle('${i.id}')">X</button></td></tr>`;
   }).join('');
 }
 
-/* ---------- COLLECTION PERSO ---------- */
 function ajouterCollection() {
-  const nom = document.getElementById('p-nom').value.trim();
-  if (!nom) { showToast('Donne un nom.', true); return; }
-
-  const photo = document.getElementById('p-photo-data').value;
-  const newItem = {
-    id: editingCollectionId || Date.now() + Math.random().toString(),
-    nom, photo,
-    set: document.getElementById('p-set').value.trim(),
-    langue: document.getElementById('p-langue').value,
-    annee: +document.getElementById('p-annee').value || 0,
-    etat: document.getElementById('p-etat').value,
-    valeur: +document.getElementById('p-valeur').value || 0,
-    qte: +document.getElementById('p-qte').value || 1
-  };
-
-  if (editingCollectionId) {
-    state.collection = state.collection.map(x => String(x.id) === String(editingCollectionId) ? newItem : x);
-    showToast('Carte modifiée.');
-    annulerEditCollection();
-  } else {
-    state.collection.push(newItem);
-    showToast('Carte ajoutée.');
-  }
-  resetForm('p'); save(); renderAll();
+  const nom = document.getElementById('p-nom').value.trim(); if(!nom) return;
+  const item = { id: editingCollectionId || Date.now()+'', nom, set: document.getElementById('p-set').value, langue: document.getElementById('p-langue').value, annee: +document.getElementById('p-annee').value, etat: document.getElementById('p-etat').value, valeur: +document.getElementById('p-valeur').value, qte: +document.getElementById('p-qte').value, photo: document.getElementById('p-photo-data').value };
+  if(editingCollectionId) { state.collection = state.collection.map(x=>String(x.id)===String(editingCollectionId)?item:x); annulerEditCollection(); } else state.collection.push(item);
+  resetForm('p'); save(); renderAll(); showToast('Enregistré.');
 }
-
-function editerCollection(id) {
-  const item = state.collection.find(x => String(x.id) === String(id));
-  if (!item) return;
-  editingCollectionId = id;
-  document.getElementById('p-nom').value = item.nom;
-  document.getElementById('p-set').value = item.set;
-  document.getElementById('p-langue').value = item.langue;
-  document.getElementById('p-annee').value = item.annee;
-  document.getElementById('p-etat').value = item.etat;
-  document.getElementById('p-valeur').value = item.valeur;
-  document.getElementById('p-qte').value = item.qte;
-  
-  if (item.photo) {
-    document.getElementById('p-photo-data').value = item.photo;
-    const prev = document.getElementById('p-photo-preview');
-    prev.src = item.photo; prev.style.display = 'block';
-  }
-  
-  document.getElementById('btn-add-collection').textContent = 'Enregistrer les modifications';
-  document.getElementById('btn-cancel-collection').style.display = 'inline-flex';
-}
-
-function annulerEditCollection() {
-  editingCollectionId = null;
-  resetForm('p');
-  document.getElementById('btn-add-collection').textContent = 'Ajouter à ma collection';
-  document.getElementById('btn-cancel-collection').style.display = 'none';
-}
-
-function supprimerCollection(id) {
-  if (!confirm('Supprimer ?')) return;
-  state.collection = state.collection.filter(c => String(c.id) !== String(id));
-  save(); renderAll(); showToast('Supprimée.');
-}
-
+function editerCollection(id) { const item = state.collection.find(x=>String(x.id)===String(id)); if(!item) return; editingCollectionId = id; document.getElementById('p-nom').value=item.nom; document.getElementById('p-set').value=item.set; document.getElementById('p-langue').value=item.langue; document.getElementById('p-annee').value=item.annee; document.getElementById('p-etat').value=item.etat; document.getElementById('p-valeur').value=item.valeur; document.getElementById('p-qte').value=item.qte; if(item.photo){document.getElementById('p-photo-data').value=item.photo;document.getElementById('p-photo-preview').src=item.photo;document.getElementById('p-photo-preview').style.display='block';} document.getElementById('btn-add-collection').textContent='Enregistrer les modifs'; document.getElementById('btn-cancel-collection').style.display='inline-flex'; }
+function annulerEditCollection() { editingCollectionId=null; resetForm('p'); document.getElementById('btn-add-collection').textContent='Ajouter à ma collection'; document.getElementById('btn-cancel-collection').style.display='none'; }
+function supprimerCollection(id) { state.collection = state.collection.filter(x=>String(x.id)!==String(id)); save(); renderAll(); }
 function renderCollection() {
-  const tb = document.getElementById('tb-collection');
-  if (!tb) return;
-  const search = (document.getElementById('search-collection')?.value || '').toLowerCase();
-  const filtered = state.collection.filter(c => c.nom.toLowerCase().includes(search));
-
-  const totalValeur = filtered.reduce((s, c) => s + (c.valeur * c.qte), 0);
-  if (document.getElementById('p-total')) document.getElementById('p-total').textContent = fmt(totalValeur);
-  if (document.getElementById('p-uniques')) document.getElementById('p-uniques').textContent = filtered.length;
-  if (document.getElementById('p-nb')) document.getElementById('p-nb').textContent = filtered.reduce((s, c) => s + c.qte, 0);
-
-  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">Aucune carte dans la collection.</td></tr>'; return; }
-  
+  const tb = document.getElementById('tb-collection'); if(!tb) return;
+  const search = (document.getElementById('search-collection')?.value||'').toLowerCase(); const filtered = state.collection.filter(c=>c.nom.toLowerCase().includes(search));
+  if(document.getElementById('p-total')) document.getElementById('p-total').textContent = fmt(filtered.reduce((s,c)=>s+(c.valeur*c.qte),0));
+  if(document.getElementById('p-uniques')) document.getElementById('p-uniques').textContent = filtered.length;
+  if(document.getElementById('p-nb')) document.getElementById('p-nb').textContent = filtered.reduce((s,c)=>s+c.qte,0);
+  if(!filtered.length) { tb.innerHTML='<tr><td colspan="9" class="empty">Aucune carte.</td></tr>'; return; }
   tb.innerHTML = filtered.map(c => {
     const img = c.photo ? `<img src="${c.photo}" class="thumb" onclick="downloadImage(this.src)">` : '-';
-    return `<tr>
-      <td>${img}</td>
-      <td><strong>${c.nom}</strong></td>
-      <td>${c.set || '-'}</td>
-      <td>${c.langue}</td>
-      <td>${c.annee || '-'}</td>
-      <td><span class="badge b-cyan">${c.etat}</span></td>
-      <td>${c.qte}</td>
-      <td>${fmt(c.valeur)}</td>
-      <td>
-        <button class="btn btn-sm" onclick="editerCollection('${c.id}')">✎</button>
-        <button class="btn btn-sm btn-danger" onclick="supprimerCollection('${c.id}')">X</button>
-      </td>
-    </tr>`;
+    return `<tr><td>${img}</td><td><strong>${c.nom}</strong></td><td>${c.set||'-'}</td><td>${c.langue}</td><td>${c.annee||'-'}</td><td><span class="badge b-cyan">${c.etat}</span></td><td>${c.qte}</td><td>${fmt(c.valeur)}</td><td><button class="btn btn-sm" onclick="editerCollection('${c.id}')">✎</button> <button class="btn btn-sm btn-danger" onclick="supprimerCollection('${c.id}')">X</button></td></tr>`;
   }).join('');
 }
 
 /* ---------- VENTES ---------- */
 function ajouterVente() {
-  const carteId = document.getElementById('v-carte').value;
-  if (!carteId) { showToast('Sélectionne un produit.', true); return; }
-  
-  let item = state.cartes.find(c => String(c.id) === String(carteId));
-  let cout = 0;
-  if (item) { cout = coutRevient(item); } 
-  else {
-    item = state.gradees.find(g => String(g.id) === String(carteId));
-    if (item) cout = item.achat;
-    else {
-      item = state.scelles.find(s => String(s.id) === String(carteId));
-      if (item) cout = item.achat;
-    }
-  }
-  if (!item) return;
-
-  state.ventes.push({
-    id: Date.now() + Math.random().toString(),
-    carteId: item.id,
-    nom: item.nom,
-    cout: cout,
-    date: document.getElementById('v-date').value || new Date().toISOString().slice(0, 10),
-    prix: +document.getElementById('v-prix').value || 0,
-    frais: +document.getElementById('v-frais').value || 0,
-    plateforme: document.getElementById('v-plateforme').value
-  });
-
+  const id = document.getElementById('v-carte').value; if(!id) return;
+  let item = state.cartes.find(c=>String(c.id)===String(id)) || state.gradees.find(g=>String(g.id)===String(id)) || state.scelles.find(s=>String(s.id)===String(id));
+  if(!item) return;
+  let cout = item.achat || 0; if(item.port) cout += item.port; if(item.grad) cout += item.grad;
+  state.ventes.push({ id: Date.now()+'', nom: item.nom, cout: cout, date: document.getElementById('v-date').value, prix: +document.getElementById('v-prix').value, frais: +document.getElementById('v-frais').value, plateforme: document.getElementById('v-plateforme').value });
   save(); renderAll(); showToast('Vente enregistrée.');
 }
-
-function supprimerVente(id) {
-  if (!confirm('Supprimer cette vente ?')) return;
-  state.ventes = state.ventes.filter(v => String(v.id) !== String(id));
-  save(); renderAll(); showToast('Vente supprimée.');
-}
-
+function supprimerVente(id) { state.ventes = state.ventes.filter(v=>String(v.id)!==String(id)); save(); renderAll(); }
 function renderVentes() {
-  const sel = document.getElementById('v-carte');
-  if (sel) {
-    const current = sel.value;
-    let html = '<option value="">Sélectionner un produit</option>';
-    html += '<optgroup label="Cartes (Raw)">' + state.cartes.map(c => `<option value="${c.id}">${c.nom}</option>`).join('') + '</optgroup>';
-    html += '<optgroup label="Cartes Gradées">' + state.gradees.map(g => `<option value="${g.id}">${g.nom} (${g.note})</option>`).join('') + '</optgroup>';
-    html += '<optgroup label="Scellés">' + state.scelles.map(s => `<option value="${s.id}">${s.nom}</option>`).join('') + '</optgroup>';
+  const sel = document.getElementById('v-carte'); if(sel) {
+    let html = '<option value="">Sélectionner...</option>';
+    html += '<optgroup label="Cartes">'+state.cartes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')+'</optgroup>';
+    html += '<optgroup label="Gradées">'+state.gradees.map(g=>`<option value="${g.id}">${g.nom}</option>`).join('')+'</optgroup>';
+    html += '<optgroup label="Scellés">'+state.scelles.map(s=>`<option value="${s.id}">${s.nom}</option>`).join('')+'</optgroup>';
     sel.innerHTML = html;
-    if (current) sel.value = current;
   }
-
-  const tb = document.getElementById('tb-ventes');
-  if (!tb) return;
-  if (!state.ventes.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Aucune vente.</td></tr>'; return; }
-
+  const tb = document.getElementById('tb-ventes'); if(!tb) return;
+  if(!state.ventes.length) { tb.innerHTML='<tr><td colspan="8" class="empty">Aucune vente.</td></tr>'; return; }
   tb.innerHTML = state.ventes.slice().reverse().map(v => {
-    const net = v.prix - v.frais;
-    const marge = net - v.cout;
-    return `<tr>
-      <td>${v.date}</td>
-      <td><strong>${v.nom}</strong></td>
-      <td>${v.plateforme}</td>
-      <td>${fmt(v.prix)}</td>
-      <td>${fmt(v.frais)}</td>
-      <td>${fmt(net)}</td>
-      <td style="color:${marge >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(marge)}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="supprimerVente('${v.id}')">X</button></td>
-    </tr>`;
+    const net = v.prix - v.frais, marge = net - v.cout;
+    return `<tr><td>${v.date}</td><td><strong>${v.nom}</strong></td><td>${v.plateforme}</td><td>${fmt(v.prix)}</td><td>${fmt(v.frais)}</td><td>${fmt(net)}</td><td style="color:${marge>=0?'var(--green)':'#ff8a92'}">${fmt(marge)}</td><td><button class="btn btn-sm btn-danger" onclick="supprimerVente('${v.id}')">X</button></td></tr>`;
   }).join('');
-
-  const ca = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
-  const marge = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
-  if (document.getElementById('v-ca')) document.getElementById('v-ca').textContent = fmt(ca);
-  if (document.getElementById('v-marge')) {
-    document.getElementById('v-marge').textContent = fmt(marge);
-    document.getElementById('v-marge').className = 'kpi-value ' + (marge >= 0 ? 'pos' : 'neg');
-  }
-  if (document.getElementById('v-nb')) document.getElementById('v-nb').textContent = state.ventes.length;
 }
 
 /* ---------- OBJECTIFS ---------- */
-function saveObjectifs() {
-  state.objectifs = {
-    ca: +document.getElementById('o-ca').value || 0,
-    marge: +document.getElementById('o-marge').value || 0,
-    cartes: +document.getElementById('o-cartes').value || 0
-  };
-  save(); renderObjectifs(); renderDashboard(); showToast('Objectifs enregistrés.');
-}
-
+function saveObjectifs() { state.objectifs = { ca: +document.getElementById('o-ca').value, marge: +document.getElementById('o-marge').value, cartes: +document.getElementById('o-cartes').value }; save(); renderObjectifs(); renderDashboard(); showToast('Objectifs enregistrés.'); }
 function renderObjectifs() {
-  const o = state.objectifs;
-  const caActuel = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
-  const margeActuelle = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
-  const cartesAchetees = state.cartes.length + state.gradees.length + state.scelles.length;
-
-  const ligne = (nom, actuel, cible, cls) => {
-    const pct = cible > 0 ? Math.min(100, (actuel / cible) * 100) : 0;
-    return `<div class="obj-row">
-      <div class="obj-head">
-        <div class="obj-name">${nom}</div>
-        <div class="obj-stats"><strong>${cls === 'int' ? fmtInt(actuel) : fmt(actuel)}</strong> / ${cls === 'int' ? fmtInt(cible) : fmt(cible)} (${pct.toFixed(0)}%)</div>
-      </div>
-      <div class="prog"><div class="prog-fill ${cls === 'int' ? 'cyan' : cls === 'marge' ? 'green' : ''}" style="width:${pct}%"></div></div>
-    </div>`;
-  };
-
-  const el = document.getElementById('obj-progress');
-  if (el) {
-    el.innerHTML =
-      ligne("Chiffre d'affaires", caActuel, o.ca, '') +
-      ligne('Marge nette', margeActuelle, o.marge, 'marge') +
-      ligne('Produits achetés', cartesAchetees, o.cartes, 'int');
-  }
-
-  if (document.getElementById('o-ca')) document.getElementById('o-ca').value = o.ca;
-  if (document.getElementById('o-marge')) document.getElementById('o-marge').value = o.marge;
-  if (document.getElementById('o-cartes')) document.getElementById('o-cartes').value = o.cartes;
+  const ca = state.ventes.reduce((s,v)=>s+(v.prix-v.frais),0), mg = state.ventes.reduce((s,v)=>s+(v.prix-v.frais-v.cout),0), nb = state.cartes.length + state.gradees.length + state.scelles.length;
+  const l = (n,a,c,k) => `<div class="obj-row"><div class="obj-head"><div class="obj-name">${n}</div><div class="obj-stats"><strong>${k==='int'?Math.round(a):fmt(a)}</strong> / ${k==='int'?c:fmt(c)} (${c>0?Math.min(100,(a/c)*100).toFixed(0):0}%)</div></div><div class="prog"><div class="prog-fill ${k==='int'?'cyan':k==='marge'?'green':''}" style="width:${c>0?Math.min(100,(a/c)*100):0}%"></div></div></div>`;
+  const el = document.getElementById('obj-progress'); if(el) el.innerHTML = l("CA",ca,state.objectifs.ca,'') + l("Marge",mg,state.objectifs.marge,'marge') + l("Cartes",nb,state.objectifs.cartes,'int');
+  if(document.getElementById('o-ca')) document.getElementById('o-ca').value = state.objectifs.ca;
+  if(document.getElementById('o-marge')) document.getElementById('o-marge').value = state.objectifs.marge;
+  if(document.getElementById('o-cartes')) document.getElementById('o-cartes').value = state.objectifs.cartes;
 }
 
 /* ---------- UTILS FORMULAIRES ---------- */
-function resetForm(prefix) {
-  document.getElementById(prefix + '-nom').value = '';
-  document.getElementById(prefix + '-photo-data').value = '';
-  const prev = document.getElementById(prefix + '-photo-preview');
-  if (prev) { prev.src = ''; prev.style.display = 'none'; }
-  const label = document.getElementById(prefix + '-file-label');
-  if (label) label.textContent = "Choisir une image...";
-  
-  if (prefix === 'c') {
-    document.getElementById('c-achat').value = 0;
-    document.getElementById('c-port').value = 0;
-    document.getElementById('c-grad').value = 0;
-    document.getElementById('c-p10').value = 0;
-    document.getElementById('c-p9').value = 0;
+function resetForm(p) {
+  ['nom','numero','photo-data','set','annee'].forEach(k => { const el = document.getElementById(p+'-'+k); if(el) el.value=''; });
+  const prev = document.getElementById(p+'-photo-preview'); if(prev){prev.src='';prev.style.display='none';}
+  const lbl = document.getElementById(p+'-file-label'); if(lbl) lbl.textContent="Choisir une image...";
+  if(p==='c') ['achat','port','grad','p10','p9'].forEach(k=>document.getElementById('c-'+k).value=0);
+}
+
+/* ---------- IMPORT / EXPORT CSV ---------- */
+function exporterCSV() {
+  let csv = "Type,Nom,Numero,Langue,Quantite,PrixAchat,FraisPort,FraisGrad,ValeurActuelle,Statut\n";
+  state.cartes.forEach(c => csv += `Carte,"${c.nom}","${c.numero||''}","${c.langue}",${c.qte||1},${c.achat||0},${c.port||0},${c.grad||0},${c.p10||0},Raw\n`);
+  state.gradees.forEach(g => csv += `Gradee,"${g.nom}","",FR,${g.qte||1},${g.achat||0},0,0,${g.valeur||0},"${g.statut}"\n`);
+  state.scelles.forEach(s => csv += `Scelle,"${s.nom}","",FR,${s.qte||1},${s.achat||0},0,0,${s.valeur||0},"${s.type}"\n`);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pokemarges_export.csv'; a.click();
+}
+function importerCSV(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const lines = evt.target.result.split('\n');
+    lines.slice(1).forEach(line => {
+      const cols = line.split(','); if(cols.length < 6) return;
+      const type = cols[0].replace(/"/g,'');
+      const nom = cols[1].replace(/"/g,'');
+      if(!nom) return;
+      if(type==='Carte') state.cartes.push({ id: Date.now()+Math.random()+'', nom, numero: cols[2].replace(/"/g,''), langue: cols[3].replace(/"/g,''), qte: +cols[4]||1, achat: +cols[5]||0, port: +cols[6]||0, grad: +cols[7]||0, p10: +cols[8]||0, p9: 0, prob: 30 });
+      if(type==='Gradee') state.gradees.push({ id: Date.now()+Math.random()+'', nom, qte: +cols[4]||1, achat: +cols[5]||0, valeur: +cols[8]||0, statut: cols[9].replace(/"/g,'')||'En stock' });
+      if(type==='Scelle') state.scelles.push({ id: Date.now()+Math.random()+'', nom, qte: +cols[4]||1, achat: +cols[5]||0, valeur: +cols[8]||0, type: cols[9].replace(/"/g,'')||'Autre' });
+    });
+    save(); renderAll(); showToast('Import CSV réussi !');
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- MOTEUR API & PORTEFEUILLE ---------- */
+async function fetchTCGdexPrice(nom, numero) {
+  try {
+    const res = await fetch(`https://api.tcgdex.net/v2/fr/cards?name=${encodeURIComponent(nom)}`);
+    if(!res.ok) return null; const data = await res.json(); if(!data || !data.length) return null;
+    let card = data[0];
+    if(numero && numero.trim() !== "") {
+      const clean = numero.split('/')[0].trim();
+      const matched = data.find(c => c.localId === clean);
+      if(matched) card = matched;
+    }
+    const dRes = await fetch(`https://api.tcgdex.net/v2/fr/cards/${card.id}`);
+    if(!dRes.ok) return null; const dData = await dRes.json();
+    if(dData.pricing && dData.pricing.cardmarket) return dData.pricing.cardmarket.avg || dData.pricing.cardmarket.trend || null;
+    return null;
+  } catch(e) { return null; }
+}
+
+async function autoUpdatePrices() {
+  showToast('Mise à jour des prix (API)...');
+  let count = 0;
+  for(let c of state.cartes) {
+    const p = await fetchTCGdexPrice(c.nom, c.numero);
+    if(p && p > 0) { c.p10 = Math.round(p*1.5*100)/100; c.p9 = Math.round(p*1*100)/100; c.lastPrice = p; count++; }
+    await new Promise(r=>setTimeout(r, 800));
   }
-}
-
-/* ---------- EXPORT & API ---------- */
-function exporter() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url;
-  a.download = 'pokemarges_export_' + new Date().toISOString().slice(0, 10) + '.json';
-  a.click(); URL.revokeObjectURL(url); showToast('Données exportées.');
-}
-
-async function actualiserPrixAPI() {
-  if (!state.cartes.length && !state.scelles.length) { showToast('Aucun produit à actualiser.', true); return; }
-  showToast('Recherche des prix en cours...');
-  let updateCount = 0;
-  
-  // Simulation d'appel API (Sera remplacé par PokéWallet)
-  await new Promise(r => setTimeout(r, 1000));
-  
-  // Mise à jour fictive pour tester l'interface
-  state.cartes.forEach(c => { c.p10 = Math.round(c.p10 * 1.05); c.p9 = Math.round(c.p9 * 1.02); updateCount++; });
-  state.scelles.forEach(s => { s.valeur = Math.round(s.valeur * 1.05); updateCount++; });
-
-  if (updateCount > 0) {
-    save(); renderAll();
-    showToast(`${updateCount} prix simulés. (Prêt pour PokéWallet)`);
+  for(let w of state.wishlist) {
+    const p = await fetchTCGdexPrice(w.nom, w.numero);
+    if(p) { w.actuel = p; if(p <= w.cible && w.cible > 0) showToast(`Alerte : ${w.nom} est à ${p}€ !`, false); }
+    await new Promise(r=>setTimeout(r, 800));
   }
+  // Mettre à jour l'historique du portefeuille
+  const today = new Date().toISOString().slice(0,10);
+  const total = state.cartes.reduce((s,c)=>s+(c.p10*c.qte),0) + state.gradees.reduce((s,g)=>s+(g.valeur*g.qte),0) + state.scelles.reduce((s,sc)=>s+(sc.valeur*sc.qte),0);
+  if(total > 0) state.portfolioHistory[today] = total;
+  
+  save(); renderAll();
+  if(count > 0) showToast(`${count} prix mis à jour !`);
+  else showToast('Aucun prix trouvé (vérifie les noms/numéros).', true);
 }
+
+const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+window.addEventListener('load', () => { setTimeout(() => { autoUpdatePrices(); setInterval(autoUpdatePrices, UPDATE_INTERVAL_MS); }, 5000); });
 </script>
 <script>
 /* ============================================================
-   POKÉMARGES PRO V5 — PARTIE 3/3 : GRAPHIQUES & INITIALISATION
+   POKÉMARGES PRO V6 — PARTIE 3/3 : GRAPHIQUES & DASHBOARD
    ============================================================ */
 
 Chart.defaults.color = '#7a7a95';
@@ -1103,20 +738,21 @@ Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.font.size = 12;
 Chart.defaults.borderColor = 'rgba(90,100,160,.15)';
 
-let chTreso, chRep, chMensuel, chStock;
+let chTreso, chPortfolio, chRep, chMensuel, chStock;
 
-/* ---------- DASHBOARD (KPIs & ALERTES) ---------- */
+/* ---------- DASHBOARD & ALERTES ---------- */
 function renderDashboard() {
   const investi = state.cartes.reduce((s, c) => s + coutRevient(c), 0) + 
-                  state.gradees.reduce((s, g) => s + g.achat, 0) + 
-                  state.scelles.reduce((s, sc) => s + sc.achat, 0);
+                  state.gradees.reduce((s, g) => s + (g.achat * g.qte), 0) + 
+                  state.scelles.reduce((s, sc) => s + (sc.achat * sc.qte), 0);
                   
   const treso = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
-  const margeGlobale = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
+  const marge = state.ventes.reduce((s, v) => s + (v.prix - v.frais - v.cout), 0);
   
   const valGraded = state.gradees.filter(g => g.statut === 'En stock').reduce((s, g) => s + (g.valeur * g.qte), 0);
   const valSealed = state.scelles.reduce((s, sc) => s + (sc.valeur * sc.qte), 0);
-  const totalParc = valGraded + valSealed;
+  const valRaw = state.cartes.reduce((s, c) => s + ((+c.p10 || 0) * (+c.qte || 1)), 0);
+  const totalParc = valRaw + valGraded + valSealed;
 
   const setKpi = (id, val, isPos) => {
     const el = document.getElementById(id);
@@ -1127,298 +763,205 @@ function renderDashboard() {
 
   setKpi('k-investi', fmt(investi));
   setKpi('k-treso', fmt(treso), treso >= 0);
-  setKpi('k-marge', fmt(margeGlobale), margeGlobale >= 0);
+  setKpi('k-marge', fmt(marge), marge >= 0);
   setKpi('k-parc', fmt(totalParc), totalParc >= 0);
 
   renderAlerts();
+  renderTopMovers();
 }
 
-/* ---------- ALERTES AUTOMATIQUES ---------- */
 function renderAlerts() {
   const el = document.getElementById('alert-list');
   if (!el) return;
-
   let alerts = [];
 
-  // 1. Objectif CA
+  // Objectif CA
   const caActuel = state.ventes.reduce((s, v) => s + (v.prix - v.frais), 0);
-  const objCa = state.objectifs.ca;
-  if (caActuel > 0 && objCa > 0) {
-    const pct = (caActuel / objCa) * 100;
-    if (pct >= 100) alerts.push({ type: 'success', text: `Objectif de chiffre d'affaires atteint à ${pct.toFixed(0)}% ! Félicitations.` });
-    else if (pct >= 50) alerts.push({ type: 'info', text: `Tu es à ${pct.toFixed(0)}% de ton objectif de CA (${fmt(caActuel)} / ${fmt(objCa)}). Continue !` });
+  if (caActuel > 0 && state.objectifs.ca > 0) {
+    const pct = (caActuel / state.objectifs.ca) * 100;
+    if (pct >= 100) alerts.push({ type: 'success', text: `Objectif de CA atteint à ${pct.toFixed(0)}% !` });
+    else if (pct >= 50) alerts.push({ type: 'info', text: `Tu es à ${pct.toFixed(0)}% de ton objectif de CA (${fmt(caActuel)} / ${fmt(state.objectifs.ca)}).` });
   }
 
-  // 2. Cartes en gradation
-  const enGradation = state.gradees.filter(g => g.statut === 'En gradation');
-  if (enGradation.length > 0) alerts.push({ type: 'warning', text: `${enGradation.length} carte(s) en cours de gradation. Pense à vérifier le suivi.` });
+  // Gradation / Livraison
+  const enGrad = state.gradees.filter(g => g.statut === 'En gradation').length;
+  if (enGrad > 0) alerts.push({ type: 'warning', text: `${enGrad} carte(s) en cours de gradation.` });
+  
+  const enLivr = state.gradees.filter(g => g.statut === 'En livraison').length;
+  if (enLivr > 0) alerts.push({ type: 'info', text: `${enLivr} carte(s) en cours de livraison.` });
 
-  // 3. Cartes en livraison
-  const enLivraison = state.gradees.filter(g => g.statut === 'En livraison');
-  if (enLivraison.length > 0) alerts.push({ type: 'info', text: `${enLivraison.length} carte(s) en cours de livraison.` });
+  // Wishlist
+  const wishHit = state.wishlist.filter(w => w.actuel > 0 && w.actuel <= w.cible);
+  if (wishHit.length > 0) alerts.push({ type: 'success', text: `${wishHit.length} carte(s) de ta Wishlist ont atteint leur prix cible !` });
 
-  // 4. Cartes non rentables
-  const mauvaisesAffaires = state.cartes.filter(c => calcEV(c) < 0);
-  if (mauvaisesAffaires.length > 0) alerts.push({ type: 'danger', text: `Attention : ${mauvaisesAffaires.length} carte(s) dans l'analyse ont une marge attendue (EV) négative.` });
+  // Mauvaises affaires
+  const bad = state.cartes.filter(c => calcEV(c) < 0).length;
+  if (bad > 0) alerts.push({ type: 'danger', text: `${bad} carte(s) ont une marge attendue (EV) négative.` });
 
-  // Rendu
   if (alerts.length === 0) {
-    el.innerHTML = `<div class="alert-item success"><span style="font-size:20px">✓</span> Tout est à jour. Aucune alerte pour le moment.</div>`;
+    el.innerHTML = `<div class="alert-item success"><span>✓</span> Tout est à jour. Aucune alerte.</div>`;
   } else {
     el.innerHTML = alerts.map(a => `<div class="alert-item ${a.type}"><span>${a.text}</span></div>`).join('');
   }
 }
 
-/* ---------- GRAPHIQUE TRÉSORERIE ---------- */
+function renderTopMovers() {
+  const el = document.getElementById('top-movers');
+  if (!el) return;
+
+  // On trie les cartes par marge latente (Prix de vente estimé - Coût d'achat)
+  const movers = state.cartes
+    .filter(c => c.p10 > 0 && c.achat > 0)
+    .map(c => {
+      const marge = (c.p10 * c.qte) - coutRevient(c);
+      const pct = (marge / coutRevient(c)) * 100;
+      return { nom: c.nom, marge, pct };
+    })
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 5);
+
+  if (!movers.length) {
+    el.innerHTML = `<div class="empty" style="padding:10px;">Ajoute des prix pour voir tes Top Movers.</div>`;
+    return;
+  }
+
+  el.innerHTML = movers.map(m => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border);">
+      <span style="font-weight:500;font-size:13px;">${m.nom}</span>
+      <span class="badge ${m.pct >= 0 ? 'b-ok' : 'b-no'}">${m.pct >= 0 ? '+' : ''}${m.pct.toFixed(1)}%</span>
+    </div>
+  `).join('');
+}
+
+/* ---------- GRAPHIQUES ---------- */
 function renderChartTreso() {
   const canvas = document.getElementById('ch-treso');
   if (!canvas) return;
-
   const ventesTri = state.ventes.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const labels = [];
-  const data = [];
+  const labels = [], data = [];
   let cumul = 0;
-  
-  ventesTri.forEach(v => {
-    cumul += (v.prix - v.frais);
-    labels.push(v.date);
-    data.push(cumul);
-  });
-
+  ventesTri.forEach(v => { cumul += (v.prix - v.frais); labels.push(v.date); data.push(cumul); });
   if (chTreso) chTreso.destroy();
   if (!labels.length) { labels.push('Aujourd\'hui'); data.push(0); }
 
   const ctx = canvas.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 300);
-  grad.addColorStop(0, 'rgba(0,212,255,.5)');
-  grad.addColorStop(1, 'rgba(0,212,255,0)');
+  grad.addColorStop(0, 'rgba(0,212,255,.5)'); grad.addColorStop(1, 'rgba(0,212,255,0)');
 
   chTreso = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Trésorerie (€)',
-        data,
-        borderColor: '#00d4ff',
-        backgroundColor: grad,
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#00d4ff',
-        pointBorderColor: '#05050d',
-        pointBorderWidth: 2,
-        pointRadius: 5
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } }
-      }
-    }
+    type: 'line', data: { labels, datasets: [{ label: 'Trésorerie', data, borderColor: '#00d4ff', backgroundColor: grad, borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } } } }
   });
 }
 
-/* ---------- GRAPHIQUE CAMEMBERT (RÉPARTITION) ---------- */
+function renderChartPortfolio() {
+  const canvas = document.getElementById('ch-portfolio');
+  if (!canvas) return;
+  
+  // On convertit l'historique objet en tableaux pour Chart.js
+  const history = state.portfolioHistory || {};
+  const labels = Object.keys(history).sort();
+  const data = labels.map(k => history[k]);
+
+  if (chPortfolio) chPortfolio.destroy();
+  if (!labels.length) { labels.push('Aujourd\'hui'); data.push(0); }
+
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 300);
+  grad.addColorStop(0, 'rgba(157,78,221,.5)'); grad.addColorStop(1, 'rgba(157,78,221,0)');
+
+  chPortfolio = new Chart(ctx, {
+    type: 'line', data: { labels, datasets: [{ label: 'Valeur du parc', data, borderColor: '#9d4edd', backgroundColor: grad, borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } } } }
+  });
+}
+
 function renderChartRepartition() {
   const canvas = document.getElementById('ch-rep');
   if (!canvas) return;
-
-  // Calcul des 3 valeurs pour le camembert
-  const valRaw = state.cartes.reduce((s, c) => s + coutRevient(c), 0);
+  const valRaw = state.cartes.reduce((s, c) => s + ((+c.p10 || 0) * (+c.qte || 1)), 0);
   const valGraded = state.gradees.filter(g => g.statut === 'En stock').reduce((s, g) => s + (g.valeur * g.qte), 0);
   const valSealed = state.scelles.reduce((s, sc) => s + (sc.valeur * sc.qte), 0);
-
-  const labels = ['Cartes Raw (Coût)', 'Cartes Gradées (Marché)', 'Scellés (Marché)'];
-  const data = [valRaw, valGraded, valSealed];
-
+  
   if (chRep) chRep.destroy();
-
-  if (valRaw === 0 && valGraded === 0 && valSealed === 0) {
-    labels.length = 0; labels.push('Aucune donnée'); data.length = 0; data.push(1);
-  }
-
-  const couleurs = ['#ff2d55', '#ffb800', '#00d4ff']; // Rouge, Jaune, Cyan
+  let data = [valRaw, valGraded, valSealed], labels = ['Cartes Raw', 'Cartes Gradées', 'Scellés'];
+  if (valRaw === 0 && valGraded === 0 && valSealed === 0) { labels = ['Aucune donnée']; data = [1]; }
 
   chRep = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: couleurs.slice(0, labels.length),
-        borderColor: '#14162a',
-        borderWidth: 3,
-        hoverOffset: 10
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, cutout: '65%',
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } },
-        tooltip: {
-          backgroundColor: 'rgba(10,10,25,.95)',
-          borderColor: 'rgba(255,255,255,.2)', borderWidth: 1, padding: 12,
-          callbacks: {
-            label: ctx => {
-              const total = ctx.dataset.data.reduce((s, v) => s + v, 0);
-              const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
-              return ctx.label + ' : ' + fmt(ctx.parsed) + ' (' + pct + '%)';
-            }
-          }
-        }
-      }
-    }
+    type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#ff2d55', '#ffb800', '#00d4ff'], borderColor: '#14162a', borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } } } }
   });
 }
 
-/* ---------- MENSUEL ---------- */
 function renderMensuel() {
   const mois = {};
-  state.cartes.forEach(c => {
-    const m = (c.date || '').slice(0, 7);
-    if (!m) return;
-    if (!mois[m]) mois[m] = { achats: 0, investi: 0, ventes: 0, ca: 0, marge: 0 };
-    mois[m].achats++;
-    mois[m].investi += coutRevient(c);
-  });
-  state.ventes.forEach(v => {
-    const m = (v.date || '').slice(0, 7);
-    if (!m) return;
-    if (!mois[m]) mois[m] = { achats: 0, investi: 0, ventes: 0, ca: 0, marge: 0 };
-    mois[m].ventes++;
-    mois[m].ca += v.prix - v.frais;
-    mois[m].marge += v.prix - v.frais - v.cout;
-  });
+  state.cartes.forEach(c => { const m = (c.date || '').slice(0, 7); if(!m) return; if (!mois[m]) mois[m] = { achats: 0, investi: 0, ventes: 0, ca: 0, marge: 0 }; mois[m].achats++; mois[m].investi += coutRevient(c); });
+  state.ventes.forEach(v => { const m = (v.date || '').slice(0, 7); if(!m) return; if (!mois[m]) mois[m] = { achats: 0, investi: 0, ventes: 0, ca: 0, marge: 0 }; mois[m].ventes++; mois[m].ca += v.prix - v.frais; mois[m].marge += v.prix - v.frais - v.cout; });
 
   const cles = Object.keys(mois).sort();
   const tb = document.getElementById('tb-mensuel');
   if (tb) {
-    if (!cles.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">Pas de données.</td></tr>'; }
-    else {
-      tb.innerHTML = cles.map(m => {
-        const d = mois[m];
-        return `<tr>
-          <td><strong>${m}</strong></td><td>${d.achats}</td><td>${fmt(d.investi)}</td>
-          <td>${d.ventes}</td><td style="color:var(--cyan)">${fmt(d.ca)}</td>
-          <td style="color:${d.marge >= 0 ? 'var(--green)' : '#ff8a92'};font-weight:700">${fmt(d.marge)}</td>
-        </tr>`;
-      }).join('');
-    }
+    if (!cles.length) tb.innerHTML = '<tr><td colspan="6" class="empty">Pas de données.</td></tr>';
+    else tb.innerHTML = cles.map(m => { const d = mois[m]; return `<tr><td><strong>${m}</strong></td><td>${d.achats}</td><td>${fmt(d.investi)}</td><td>${d.ventes}</td><td style="color:var(--cyan)">${fmt(d.ca)}</td><td style="color:${d.marge>=0?'var(--green)':'#ff8a92'}">${fmt(d.marge)}</td></tr>`; }).join('');
   }
 
-  const canvas = document.getElementById('ch-mensuel');
-  if (!canvas) return;
+  const canvas = document.getElementById('ch-mensuel'); if (!canvas) return;
   if (chMensuel) chMensuel.destroy();
-
   const labels = cles.length ? cles : ['Aucune donnée'];
   const caData = cles.length ? cles.map(m => mois[m].ca) : [0];
   const margeData = cles.length ? cles.map(m => mois[m].marge) : [0];
   const investData = cles.length ? cles.map(m => mois[m].investi) : [0];
 
   chMensuel = new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Investi', data: investData, backgroundColor: 'rgba(255,45,85,.7)', borderRadius: 6 },
-        { label: 'CA net', data: caData, backgroundColor: 'rgba(0,212,255,.7)', borderRadius: 6 },
-        { label: 'Marge', data: margeData, backgroundColor: 'rgba(0,230,118,.7)', borderRadius: 6 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle' } } },
-      scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' }, ticks: { callback: v => v + ' €' } } }
-    }
+    type: 'bar', data: { labels, datasets: [{ label: 'Investi', data: investData, backgroundColor: 'rgba(255,45,85,.7)' }, { label: 'CA net', data: caData, backgroundColor: 'rgba(0,212,255,.7)' }, { label: 'Marge', data: margeData, backgroundColor: 'rgba(0,230,118,.7)' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' } } } }
   });
 }
 
-/* ---------- STOCK ANNUEL ---------- */
 function calculerStock() {
   const mois = {};
-  state.cartes.forEach(c => {
-    const m = (c.date || '').slice(0, 7);
-    if (!m) return;
-    if (!mois[m]) mois[m] = { achats: 0, ventes: 0, valeur: 0 };
-    mois[m].achats++;
-    mois[m].valeur += coutRevient(c);
-  });
-  state.ventes.forEach(v => {
-    const m = (v.date || '').slice(0, 7);
-    if (!m) return;
-    if (!mois[m]) mois[m] = { achats: 0, ventes: 0, valeur: 0 };
-    mois[m].ventes++;
-  });
-
-  const cles = Object.keys(mois).sort();
-  let stockCumule = 0, valeurCumulee = 0;
-  return cles.map(m => {
-    stockCumule += mois[m].achats - mois[m].ventes;
-    valeurCumulee += mois[m].valeur;
-    return { mois: m, achats: mois[m].achats, ventes: mois[m].ventes, stock: Math.max(0, stockCumule), valeur: Math.max(0, valeurCumulee) };
-  });
+  state.cartes.forEach(c => { const m = (c.date || '').slice(0, 7); if(!m) return; if (!mois[m]) mois[m] = { achats: 0, ventes: 0, valeur: 0 }; mois[m].achats += (+c.qte||1); mois[m].valeur += coutRevient(c); });
+  state.ventes.forEach(v => { const m = (v.date || '').slice(0, 7); if(!m) return; if (!mois[m]) mois[m] = { achats: 0, ventes: 0, valeur: 0 }; mois[m].ventes++; });
+  const cles = Object.keys(mois).sort(); let stockC = 0, valC = 0;
+  return cles.map(m => { stockC += mois[m].achats - mois[m].ventes; valC += mois[m].valeur; return { mois: m, achats: mois[m].achats, ventes: mois[m].ventes, stock: Math.max(0, stockC), valeur: Math.max(0, valC) }; });
 }
 
 function renderStock() {
   const data = calculerStock();
-  const totalAchats = state.cartes.length;
-  const totalVentes = state.ventes.length;
-  const stockActuel = totalAchats - totalVentes;
-  const valeurStock = state.cartes.filter(c => !state.ventes.some(v => String(v.carteId) === String(c.id))).reduce((s, c) => s + coutRevient(c), 0);
-
-  if (document.getElementById('s-stock')) document.getElementById('s-stock').textContent = stockActuel;
-  if (document.getElementById('s-vendues')) document.getElementById('s-vendues').textContent = totalVentes;
-  if (document.getElementById('s-valeur')) document.getElementById('s-valeur').textContent = fmt(valeurStock);
+  const totalAchats = state.cartes.reduce((s,c)=>s+(+c.qte||1),0), totalVentes = state.ventes.length;
+  if(document.getElementById('s-stock')) document.getElementById('s-stock').textContent = totalAchats - totalVentes;
+  if(document.getElementById('s-vendues')) document.getElementById('s-vendues').textContent = totalVentes;
+  if(document.getElementById('s-valeur')) document.getElementById('s-valeur').textContent = fmt(state.cartes.reduce((s,c)=>s+coutRevient(c),0));
 
   const tb = document.getElementById('tb-stock');
-  if (tb) {
-    if (!data.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Aucune donnée.</td></tr>'; }
-    else {
-      tb.innerHTML = data.map(d => `<tr><td><strong>${d.mois}</strong></td><td>${d.achats}</td><td>${d.ventes}</td><td>${d.stock}</td><td>${fmt(d.valeur)}</td></tr>`).join('');
-    }
-  }
+  if (tb) { if (!data.length) tb.innerHTML = '<tr><td colspan="5" class="empty">Aucune donnée.</td></tr>'; else tb.innerHTML = data.map(d => `<tr><td><strong>${d.mois}</strong></td><td>${d.achats}</td><td>${d.ventes}</td><td>${d.stock}</td><td>${fmt(d.valeur)}</td></tr>`).join(''); }
 
-  const canvas = document.getElementById('ch-stock');
-  if (!canvas) return;
+  const canvas = document.getElementById('ch-stock'); if (!canvas) return;
   if (chStock) chStock.destroy();
-
-  const labels = data.length ? data.map(d => d.mois) : ['Aucune donnée'];
-  const stockData = data.length ? data.map(d => d.stock) : [0];
-  
   chStock = new Chart(canvas.getContext('2d'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{ label: 'Stock (nb cartes)', data: stockData, borderColor: '#ff2d55', backgroundColor: 'rgba(255,45,85,.15)', borderWidth: 2.5, fill: true, tension: 0.4 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' } } }
-    }
+    type: 'line', data: { labels: data.length?data.map(d=>d.mois):['Aucune donnée'], datasets: [{ label: 'Stock', data: data.length?data.map(d=>d.stock):[0], borderColor: '#ff2d55', backgroundColor: 'rgba(255,45,85,.15)', borderWidth: 2, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(90,100,160,.1)' } } } }
   });
 }
 
-/* ---------- RENDER ALL ---------- */
+/* ---------- RENDER ALL & INIT ---------- */
 function renderAll() {
   renderDashboard();
   renderCartes();
   renderGradees();
   renderVentes();
+  renderWishlist();
   renderObjectifs();
   renderStock();
   renderCollection();
   renderScelles();
   renderMensuel();
   renderChartTreso();
+  renderChartPortfolio();
   renderChartRepartition();
+  renderChartStock();
 }
 
-/* ---------- INITIALISATION ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
   const dateInput = document.getElementById('v-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
@@ -1433,79 +976,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   } catch (e) { console.warn('Init cloud load failed', e); }
 
   updateAuthButton();
-  console.log('PokéMarges Pro V5 chargé avec succès.');
+  console.log('PokéMarges Pro V6 chargé avec succès.');
 });
 </script>
-<script>
-/* ============================================================
-   MOTEUR DE MISE À JOUR AUTOMATIQUE (TCGdex - 100% Gratuit)
-   ============================================================ */
-
-// Intervalle de mise à jour (6 heures par défaut)
-const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
-
-// Fonction pour mettre à jour une carte via TCGdex
-async function fetchTCGdexPrice(nomCarte) {
-  try {
-    // 1. On cherche la carte par son nom
-    const searchRes = await fetch(`https://api.tcgdex.net/v2/fr/cards?name=${encodeURIComponent(nomCarte)}`);
-    if (!searchRes.ok) return null;
-    const searchData = await searchRes.json();
-    if (!searchData || searchData.length === 0) return null;
-    
-    // On prend la première carte trouvée
-    const cardId = searchData[0].id;
-    
-    // 2. On récupère les détails pour avoir les prix
-    const detailsRes = await fetch(`https://api.tcgdex.net/v2/fr/cards/${cardId}`);
-    if (!detailsRes.ok) return null;
-    const detailsData = await detailsRes.json();
-    
-    // 3. On extrait le prix Cardmarket (en euros)
-    if (detailsData.pricing && detailsData.pricing.cardmarket) {
-      const prices = detailsData.pricing.cardmarket;
-      return prices.avg || prices.trend || null;
-    }
-    return null;
-  } catch (e) { 
-    console.warn("Erreur TCGdex:", e); 
-    return null; 
-  }
-}
-
-// Fonction principale de mise à jour
-async function autoUpdatePrices() {
-  console.log("Début de la mise à jour automatique des prix...");
-  if (!state.cartes.length) return;
-  
-  let updatedCount = 0;
-
-  for (const carte of state.cartes) {
-    const newPrice = await fetchTCGdexPrice(carte.nom);
-    
-    if (newPrice && newPrice > 0) {
-      // Estimation : CCC 10 vaut 1.5x le prix raw, CCC 9 vaut 1x
-      carte.p10 = Math.round(newPrice * 1.5 * 100) / 100;
-      carte.p9 = Math.round(newPrice * 1.0 * 100) / 100;
-      updatedCount++;
-    }
-    await new Promise(r => setTimeout(r, 1000)); 
-  }
-
-  if (updatedCount > 0) {
-    save(); 
-    renderAll(); 
-    showToast(`${updatedCount} prix mis à jour via TCGdex !`);
-  } else {
-    showToast("Aucun prix trouvé sur TCGdex.", true);
-  }
-}
-
-// Lancer la mise à jour au démarrage
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    autoUpdatePrices();
-    setInterval(autoUpdatePrices, UPDATE_INTERVAL_MS);
-  }, 5000);
-});
-</script>
+</body>
+</html>
